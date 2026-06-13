@@ -6,6 +6,13 @@ SIGNING_MODE=${CODEXBAR_SIGNING:-}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 LOWER_CONF=$(printf "%s" "$CONF" | tr '[:upper:]' '[:lower:]')
+case "$LOWER_CONF" in
+  debug|release) ;;
+  *)
+    echo "ERROR: Unsupported build configuration: $CONF (expected debug or release)" >&2
+    exit 1
+    ;;
+esac
 
 # Load version info
 source "$ROOT/version.env"
@@ -105,8 +112,59 @@ if [[ ! -f "$KEYBOARD_SHORTCUTS_UTIL" ]]; then
 fi
 patch_keyboard_shortcuts
 
+build_product_path() {
+  local name="$1"
+  local arch="$2"
+  case "$arch" in
+    arm64|x86_64) echo ".build/${arch}-apple-macosx/$CONF/$name" ;;
+    *) echo ".build/$CONF/$name" ;;
+  esac
+}
+
+# Resolve SwiftPM's current output path without relying on a fixed build-system layout.
+# The output variable keeps the per-arch cache in this shell instead of losing it to
+# command substitution.
+swiftpm_bin_path() {
+  local arch="$1"
+  local output_var="$2"
+  local cache_var="SWIFTPM_BIN_PATH_${arch//[^A-Za-z0-9]/_}"
+  if [[ -z "${!cache_var+set}" ]]; then
+    local resolved
+    resolved=$(swift build --show-bin-path -c "$CONF" --arch "$arch" 2>/dev/null || true)
+    printf -v "$cache_var" '%s' "$resolved"
+  fi
+  printf -v "$output_var" '%s' "${!cache_var}"
+}
+
+binary_has_arch() {
+  local binary="$1"
+  local arch="$2"
+  [[ -f "$binary" ]] && lipo -archs "$binary" 2>/dev/null | tr ' ' '\n' | grep -qx "$arch"
+}
+
+# SwiftBuild can reuse one output directory for sequential per-arch builds. Snapshot
+# each fresh slice before the next build can replace it.
+PRODUCT_STAGE_ROOT="$ROOT/.build/package-products/$LOWER_CONF"
+rm -rf "$PRODUCT_STAGE_ROOT"
+
+stage_binary_products() {
+  local arch="$1"
+  local bin_dir stage_dir name
+  swiftpm_bin_path "$arch" bin_dir
+  [[ -n "$bin_dir" ]] || return 0
+
+  stage_dir="$PRODUCT_STAGE_ROOT/$arch"
+  mkdir -p "$stage_dir"
+  for name in CodexBar CodexBarCLI CodexBarClaudeWatchdog; do
+    if binary_has_arch "$bin_dir/$name" "$arch"; then
+      cp "$bin_dir/$name" "$stage_dir/$name"
+    fi
+  done
+}
+
 for ARCH in "${ARCH_LIST[@]}"; do
   swift build -c "$CONF" --arch "$ARCH"
+  stage_binary_products "$ARCH"
 done
 
 APP_FINAL="$ROOT/CodexBar.app"
@@ -205,48 +263,28 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-build_product_path() {
-  local name="$1"
-  local arch="$2"
-  case "$arch" in
-    arm64|x86_64) echo ".build/${arch}-apple-macosx/$CONF/$name" ;;
-    *) echo ".build/$CONF/$name" ;;
-  esac
-}
-
-# Ask SwiftPM where it put the products for this arch (cached per arch).
-# The legacy native build system uses .build/<arch>-apple-macosx/<conf>/, but the
-# swiftbuild system emits to .build/out/Products/<Conf>; resolving from the
-# toolchain keeps a stale legacy directory from shadowing fresh builds.
-swiftpm_bin_path() {
-  local arch="$1"
-  local var="SWIFTPM_BIN_PATH_${arch//[^A-Za-z0-9]/_}"
-  if [[ -z "${!var+set}" ]]; then
-    local path
-    path=$(swift build --show-bin-path -c "$CONF" --arch "$arch" 2>/dev/null || true)
-    printf -v "$var" '%s' "$path"
-  fi
-  echo "${!var}"
-}
-
-# Resolve path to built binary; prefer the bin dir SwiftPM reports, then fall
-# back to the known legacy layouts (.build/<arch>-apple-macosx/<conf>/ and
-# .build/$CONF/ for host-only builds on some SwiftPM versions).
+# Resolve path to a built binary. Prefer the per-arch snapshot, then SwiftPM's
+# reported directory, then legacy layouts for older toolchains.
 resolve_binary_path() {
   local name="$1"
   local arch="$2"
   local bin_dir candidate
-  bin_dir=$(swiftpm_bin_path "$arch")
-  if [[ -n "$bin_dir" && -f "$bin_dir/$name" ]]; then
+  candidate="$PRODUCT_STAGE_ROOT/$arch/$name"
+  if binary_has_arch "$candidate" "$arch"; then
+    echo "$candidate"
+    return
+  fi
+  swiftpm_bin_path "$arch" bin_dir
+  if [[ -n "$bin_dir" ]] && binary_has_arch "$bin_dir/$name" "$arch"; then
     echo "$bin_dir/$name"
     return
   fi
   candidate=$(build_product_path "$name" "$arch")
-  if [[ -f "$candidate" ]]; then
+  if binary_has_arch "$candidate" "$arch"; then
     echo "$candidate"
     return
   fi
-  if [[ "$arch" == "arm64" || "$arch" == "x86_64" ]] && [[ -f ".build/$CONF/$name" ]]; then
+  if [[ "$arch" == "arm64" || "$arch" == "x86_64" ]] && binary_has_arch ".build/$CONF/$name" "$arch"; then
     echo ".build/$CONF/$name"
   fi
 }
@@ -276,10 +314,11 @@ install_binary() {
   local dest="$2"
   local binaries=()
   for arch in "${ARCH_LIST[@]}"; do
-    local src
+    local src bin_dir
     src=$(resolve_binary_path "$name" "$arch")
     if [[ -z "$src" || ! -f "$src" ]]; then
-      echo "ERROR: Missing ${name} build for ${arch} (looked in: $(swiftpm_bin_path "$arch"), $(build_product_path "$name" "$arch"), .build/$CONF)" >&2
+      swiftpm_bin_path "$arch" bin_dir
+      echo "ERROR: Missing ${name} build for ${arch} (looked in: $PRODUCT_STAGE_ROOT/$arch, $bin_dir, $(build_product_path "$name" "$arch"), .build/$CONF)" >&2
       exit 1
     fi
     binaries+=("$src")
@@ -436,8 +475,11 @@ if [[ ! -f "$APP/Contents/Resources/Icon-classic.icns" ]]; then
 fi
 
 # SwiftPM resource bundles (e.g. KeyboardShortcuts) are emitted next to the built binary.
-CODEXBAR_BINARY="$(resolve_binary_path "CodexBar" "${ARCH_LIST[0]}")"
-PREFERRED_BUILD_DIR="$(dirname "${CODEXBAR_BINARY:-$(build_product_path "CodexBar" "${ARCH_LIST[0]}")}")"
+swiftpm_bin_path "${ARCH_LIST[0]}" PREFERRED_BUILD_DIR
+if [[ -z "$PREFERRED_BUILD_DIR" ]]; then
+  CODEXBAR_BINARY="$(resolve_binary_path "CodexBar" "${ARCH_LIST[0]}")"
+  PREFERRED_BUILD_DIR="$(dirname "${CODEXBAR_BINARY:-$(build_product_path "CodexBar" "${ARCH_LIST[0]}")}")"
+fi
 shopt -s nullglob
 SWIFTPM_BUNDLES=("${PREFERRED_BUILD_DIR}/"*.bundle)
 shopt -u nullglob

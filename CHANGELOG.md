@@ -4,7 +4,7 @@
 
 - Menu bar: restore native macOS positioning for merged provider dropdowns while preparing current content before AppKit lays out the menu.
 - Settings: memoize cookie cache lookups behind the "Cached: …" picker labels so opening Settings and switching panes no longer pays a synchronous Keychain read per SwiftUI body evaluation, which froze the Providers pane for seconds (#1471). Thanks @ProspectOre!
-- Build: resolve packaged binaries from the bin path SwiftPM reports instead of assuming the legacy `.build/<arch>-apple-macosx/<conf>/` layout, so a stale directory left behind by the older build system no longer silently shadows fresh swiftbuild products in `package_app.sh`.
+- Build: resolve packaged binaries from the bin path SwiftPM reports instead of assuming the legacy `.build/<arch>-apple-macosx/<conf>/` layout, so a stale directory left behind by the older build system no longer silently shadows fresh swiftbuild products in `package_app.sh`. Thanks @ProspectOre!
 
 ## 0.34.0 — 2026-06-12
 
