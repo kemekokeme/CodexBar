@@ -2,9 +2,6 @@
 
 ## 0.37.3 — Unreleased
 
-### Added
-- LongCat: show console token quota (总额度) and fuel-pack balance (加油包) from a browser session. Thanks @LeoLin990405!
-
 ## 0.37.2 — 2026-06-22
 
 ### Added
