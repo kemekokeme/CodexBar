@@ -544,7 +544,7 @@ extension CostUsageScanner {
         rows: [CodexUsageRow],
         sessionId: String?) -> [CodexUsageRow]?
     {
-        var merged = existing ?? []
+        var merged = (existing ?? []).filter { self.hasStableCodexRowIdentity($0) }
         let existingKeys = Set(merged.map { Self.codexUsageRowKey(sessionId: sessionId, row: $0) })
         for row in rows where !existingKeys.contains(Self.codexUsageRowKey(sessionId: sessionId, row: row)) {
             merged.append(row)
@@ -552,10 +552,27 @@ extension CostUsageScanner {
         return merged.isEmpty ? nil : merged
     }
 
+    static func hasStableCodexRowIdentity(_ row: CodexUsageRow) -> Bool {
+        row.eventIndex != nil
+    }
+
+    static func codexRowsNeedIdentityRescan(_ rows: [CodexUsageRow]) -> Bool {
+        rows.contains { !Self.hasStableCodexRowIdentity($0) }
+    }
+
+    static func nextCodexUsageRowIndex(_ rows: [CodexUsageRow]?) -> Int {
+        guard let rows, !rows.isEmpty else { return 0 }
+        if let maxIndex = rows.compactMap(\.eventIndex).max() {
+            return maxIndex + 1
+        }
+        return rows.count
+    }
+
     static func codexUsageRowKey(sessionId: String?, row: CodexUsageRow) -> String {
         [
             sessionId ?? "",
             row.turnID ?? "",
+            row.eventIndex.map(String.init) ?? "",
             row.day,
             row.model,
             String(row.input),
@@ -817,6 +834,9 @@ extension CostUsageScanner {
 
         let sessionAlreadyContributed = cached.sessionId.map { state.contributingSessionIds.contains($0) } ?? false
         let cachedRows = cached.codexRows ?? []
+        if Self.codexRowsNeedIdentityRescan(cachedRows) {
+            return false
+        }
         if sessionAlreadyContributed {
             guard !cachedRows.isEmpty else { return false }
             let uniqueRows = Self.uniqueCodexRows(rows: cachedRows, sessionId: cached.sessionId, state: &state)
@@ -872,6 +892,9 @@ extension CostUsageScanner {
         try context.checkCancellation?()
         guard let cached = input.cached, cached.sessionId != nil, !context.forceFullScan else { return false }
         guard !Self.cachedCodexFileNeedsPriorityRescan(cached, context: context) else { return false }
+        if Self.codexRowsNeedIdentityRescan(cached.codexRows ?? []) {
+            return false
+        }
         let startOffset = cached.parsedBytes ?? cached.size
         let initialCountedTotals = cached.lastCountedTotals ?? cached.lastTotals
         let initialRawTotalsBaseline = cached.lastRawTotalsBaseline ?? cached.lastTotals
@@ -890,6 +913,7 @@ extension CostUsageScanner {
             initialRawTotalsBaseline: initialRawTotalsBaseline,
             initialHasDivergentTotals: cached.hasDivergentTotals ?? (cached.lastTotals == nil),
             initialCodexTurnID: cached.lastCodexTurnID,
+            initialCodexUsageRowIndex: Self.nextCodexUsageRowIndex(cached.codexRows),
             checkCancellation: context.checkCancellation)
         if delta.forkedFromId != nil {
             return false

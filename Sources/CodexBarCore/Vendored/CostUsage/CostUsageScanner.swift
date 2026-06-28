@@ -64,6 +64,7 @@ enum CostUsageScanner {
         let day: String
         let model: String
         let turnID: String?
+        let eventIndex: Int?
         let input: Int
         let cached: Int
         let output: Int
@@ -1470,6 +1471,7 @@ enum CostUsageScanner {
         initialRawTotalsBaseline: CostUsageCodexTotals? = nil,
         initialHasDivergentTotals: Bool = false,
         initialCodexTurnID: String? = nil,
+        initialCodexUsageRowIndex: Int = 0,
         inheritedTotalsResolver: ((String, String) -> CodexForkBaseline)? = nil) -> CodexParseResult
     {
         let throwingResolver: ((String, String) throws -> CodexForkBaseline)? = inheritedTotalsResolver
@@ -1486,6 +1488,7 @@ enum CostUsageScanner {
                 initialRawTotalsBaseline: initialRawTotalsBaseline,
                 initialHasDivergentTotals: initialHasDivergentTotals,
                 initialCodexTurnID: initialCodexTurnID,
+                initialCodexUsageRowIndex: initialCodexUsageRowIndex,
                 inheritedTotalsResolver: throwingResolver,
                 checkCancellation: nil)) ?? CodexParseResult(
             days: [:],
@@ -1511,6 +1514,7 @@ enum CostUsageScanner {
         initialRawTotalsBaseline: CostUsageCodexTotals? = nil,
         initialHasDivergentTotals: Bool = false,
         initialCodexTurnID: String? = nil,
+        initialCodexUsageRowIndex: Int = 0,
         inheritedTotalsResolver: ((String, String) throws -> CodexForkBaseline)? = nil,
         checkCancellation: CancellationCheck? = nil) throws -> CodexParseResult
     {
@@ -1524,6 +1528,7 @@ enum CostUsageScanner {
         var hasUnresolvedForkBaseline = false
         var unresolvedForkTotalWatermark: CostUsageCodexTotals?
         var currentTurnID = initialCodexTurnID
+        var codexUsageRowIndex = initialCodexUsageRowIndex
         var rawTotalsBaseline = initialRawTotalsBaseline ?? initialTotals
         var sawDivergentTotals = initialHasDivergentTotals
         var deferredError: Error?
@@ -1737,6 +1742,8 @@ enum CostUsageScanner {
             }
 
             if deltaInput == 0, deltaCached == 0, deltaOutput == 0 { return }
+            let eventIndex = codexUsageRowIndex
+            codexUsageRowIndex += 1
             let normModel = CostUsagePricing.normalizeCodexModel(model)
             add(
                 dayKey: dayKey,
@@ -1753,6 +1760,7 @@ enum CostUsageScanner {
                     day: dayKey,
                     model: normModel,
                     turnID: record.turnID ?? currentTurnID,
+                    eventIndex: eventIndex,
                     input: deltaInput,
                     cached: deltaCached,
                     output: deltaOutput))
@@ -2073,6 +2081,8 @@ enum CostUsageScanner {
                         }
 
                         if deltaInput == 0, deltaCached == 0, deltaOutput == 0 { return }
+                        let eventIndex = codexUsageRowIndex
+                        codexUsageRowIndex += 1
                         let normModel = CostUsagePricing.normalizeCodexModel(model)
                         add(
                             dayKey: dayKey,
@@ -2089,6 +2099,7 @@ enum CostUsageScanner {
                                 day: dayKey,
                                 model: normModel,
                                 turnID: Self.codexTurnID(from: payload) ?? currentTurnID,
+                                eventIndex: eventIndex,
                                 input: deltaInput,
                                 cached: deltaCached,
                                 output: deltaOutput))

@@ -480,6 +480,7 @@ struct CostUsageScannerBreakdownTests {
                 day: olderDayKey,
                 model: CostUsagePricing.normalizeCodexModel(model),
                 turnID: nil,
+                eventIndex: 0,
                 input: 20,
                 cached: 0,
                 output: 0),
@@ -487,6 +488,7 @@ struct CostUsageScannerBreakdownTests {
                 day: dayKey,
                 model: CostUsagePricing.normalizeCodexModel(model),
                 turnID: nil,
+                eventIndex: 1,
                 input: 10,
                 cached: 0,
                 output: 0),
@@ -586,6 +588,7 @@ struct CostUsageScannerBreakdownTests {
                 day: dayKey,
                 model: normalizedModel,
                 turnID: nil,
+                eventIndex: 0,
                 input: 10,
                 cached: 0,
                 output: 0),
@@ -593,6 +596,7 @@ struct CostUsageScannerBreakdownTests {
                 day: dayKey,
                 model: addedModel,
                 turnID: nil,
+                eventIndex: 1,
                 input: 10,
                 cached: 0,
                 output: 0),
@@ -1467,6 +1471,80 @@ struct CostUsageScannerBreakdownTests {
         #expect(repeated.data[0].cacheReadTokens == 500)
         #expect(repeated.data[0].outputTokens == 12)
         #expect(repeated.data[0].totalTokens == 62)
+    }
+
+    @Test
+    func `codex active archive dedupe preserves identical same turn deltas`() throws {
+        let env = try CostUsageTestEnvironment()
+        defer { env.cleanup() }
+
+        let day = try env.makeLocalNoon(year: 2026, month: 6, day: 27)
+        let iso0 = env.isoString(for: day)
+        let iso1 = env.isoString(for: day.addingTimeInterval(1))
+        let iso2 = env.isoString(for: day.addingTimeInterval(2))
+        let model = "openai/gpt-5.5"
+        let sessionMeta: [String: Any] = [
+            "type": "session_meta",
+            "payload": [
+                "session_id": "sess-identical-delta-active-archive",
+            ],
+        ]
+        let turnContext = self.codexTurnContext(timestamp: iso0, model: model)
+        let firstTurn: [String: Any] = [
+            "type": "event_msg",
+            "timestamp": iso1,
+            "payload": [
+                "type": "task_started",
+                "turn_id": "turn-a",
+            ],
+        ]
+        let firstUsage = self.codexTokenCount(
+            timestamp: iso1,
+            model: model,
+            last: (input: 20, cached: 0, output: 5))
+        let repeatedUsage = self.codexTokenCount(
+            timestamp: iso2,
+            model: model,
+            last: (input: 20, cached: 0, output: 5))
+
+        _ = try env.writeCodexSessionFile(
+            day: day,
+            filename: "active-identical-delta.jsonl",
+            contents: env.jsonl([sessionMeta, turnContext, firstTurn, firstUsage]))
+
+        let dayKey = CostUsageScanner.CostUsageDayRange.dayKey(from: day)
+        _ = try env.writeCodexArchivedSessionFile(
+            filename: "rollout-\(dayKey)T12-00-00-identical-delta.jsonl",
+            contents: env.jsonl([sessionMeta, turnContext, firstTurn, firstUsage, repeatedUsage]))
+
+        var options = CostUsageScanner.Options(
+            codexSessionsRoot: env.codexSessionsRoot,
+            claudeProjectsRoots: nil,
+            cacheRoot: env.cacheRoot)
+        options.refreshMinIntervalSeconds = 0
+
+        let report = CostUsageScanner.loadDailyReport(
+            provider: .codex,
+            since: day,
+            until: day,
+            now: day,
+            options: options)
+
+        #expect(report.data.count == 1)
+        #expect(report.data[0].inputTokens == 40)
+        #expect(report.data[0].outputTokens == 10)
+        #expect(report.data[0].totalTokens == 50)
+
+        let repeated = CostUsageScanner.loadDailyReport(
+            provider: .codex,
+            since: day,
+            until: day,
+            now: day.addingTimeInterval(1),
+            options: options)
+        #expect(repeated.data.count == 1)
+        #expect(repeated.data[0].inputTokens == 40)
+        #expect(repeated.data[0].outputTokens == 10)
+        #expect(repeated.data[0].totalTokens == 50)
     }
 
     @Test
