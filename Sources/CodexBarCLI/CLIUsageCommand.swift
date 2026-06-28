@@ -369,9 +369,7 @@ extension CodexBarCLI {
                     context: fetchContext)
             }
 
-            let descriptor = ProviderDescriptorRegistry.descriptor(for: provider)
-            let shouldDetectVersion = descriptor.cli.versionDetector != nil
-                && result.strategyKind != ProviderFetchKind.webDashboard
+            let shouldDetectVersion = Self.shouldDetectVersion(provider: provider, result: result)
             let version = Self.normalizeVersion(
                 raw: shouldDetectVersion
                     ? Self.detectVersion(for: provider, browserDetection: command.browserDetection)
@@ -443,6 +441,13 @@ extension CodexBarCLI {
         }
 
         return await Self.finishUsageOutput(output, provider: provider, command: command)
+    }
+
+    static func shouldDetectVersion(provider: UsageProvider, result: ProviderFetchResult) -> Bool {
+        let descriptor = ProviderDescriptorRegistry.descriptor(for: provider)
+        guard descriptor.cli.versionDetector != nil else { return false }
+        guard result.strategyKind != .webDashboard else { return false }
+        return !(provider == .claude && result.strategyKind == .oauth)
     }
 
     private static func holdsAntigravitySession(

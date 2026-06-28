@@ -365,7 +365,8 @@ struct ClaudeOAuthFetchStrategy: ProviderFetchStrategy {
             environment: context.env,
             dataSource: .oauth,
             oauthKeychainPromptCooldownEnabled: context.sourceMode == .auto,
-            allowBackgroundDelegatedRefresh: context.runtime == .cli,
+            allowDelegatedRefresh: context.runtime != .cli,
+            allowBackgroundDelegatedRefresh: false,
             allowStartupBootstrapPrompt: context.runtime == .app &&
                 (context.sourceMode == .auto || context.sourceMode == .oauth),
             useWebExtras: false)

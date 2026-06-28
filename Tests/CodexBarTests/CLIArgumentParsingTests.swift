@@ -99,4 +99,30 @@ struct CLIArgumentParsingTests {
         #expect(parsed.flags.contains("redact"))
         #expect(parsed.options["output"] == ["diagnostic.json"])
     }
+
+    @Test
+    func `Claude OAuth usage does not detect CLI version`() {
+        #expect(!CodexBarCLI.shouldDetectVersion(
+            provider: .claude,
+            result: self.makeResult(kind: .oauth)))
+        #expect(CodexBarCLI.shouldDetectVersion(
+            provider: .claude,
+            result: self.makeResult(kind: .cli)))
+        #expect(CodexBarCLI.shouldDetectVersion(
+            provider: .codex,
+            result: self.makeResult(kind: .oauth)))
+    }
+
+    private func makeResult(kind: ProviderFetchKind) -> ProviderFetchResult {
+        ProviderFetchResult(
+            usage: UsageSnapshot(
+                primary: nil,
+                secondary: nil,
+                updatedAt: Date(timeIntervalSince1970: 0)),
+            credits: nil,
+            dashboard: nil,
+            sourceLabel: "test",
+            strategyID: "test",
+            strategyKind: kind)
+    }
 }
