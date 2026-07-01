@@ -305,8 +305,10 @@ headers, source selection, provider ordering, and token accounts are stored in `
 - Status: `https://status.perplexity.com/` (link only, no auto-polling).
 
 ## Xiaomi MiMo
-- Browser cookies from automatic import or manual `Cookie:` header.
-- Reads balance and token-plan usage from `platform.xiaomimimo.com`.
+- Browser cookies from automatic import or manual `Cookie:` header for `platform.xiaomimimo.com` balance and token-plan endpoints.
+- Optional testing override via `MIMO_API_URL`; overrides must be HTTPS or bare hosts normalized to HTTPS, and invalid
+  overrides fail closed instead of falling back to local MiMo usage accounting.
+- Local MiMo token accounting is available only when the opt-in cache file exists.
 - Status: none yet.
 - Details: `docs/mimo.md`.
 
@@ -407,13 +409,6 @@ headers, source selection, provider ordering, and token accounts are stored in `
 - Optional API base URL override via `DEEPGRAM_API_URL`; overrides must be HTTPS or bare hosts normalized to HTTPS.
 - Reads Deepgram usage breakdowns for audio hours, agent hours, token totals, TTS characters, and requests.
 - Details: `docs/deepgram.md`.
-
-## Xiaomi MiMo
-- Browser cookies or manual Cookie header for `platform.xiaomimimo.com` balance and token-plan endpoints.
-- Optional testing override via `MIMO_API_URL`; overrides must be HTTPS or bare hosts normalized to HTTPS, and invalid
-  overrides fail closed instead of falling back to local MiMo usage accounting.
-- Local MiMo token accounting is available only when the opt-in cache file exists.
-- Details: `docs/mimo.md`.
 
 ## LiteLLM
 - API key from config or `LITELLM_API_KEY`; base URL from config `enterpriseHost` or `LITELLM_BASE_URL`.
