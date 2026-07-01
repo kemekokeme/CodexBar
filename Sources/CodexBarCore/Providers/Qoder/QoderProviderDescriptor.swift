@@ -337,15 +337,23 @@ struct QoderWebFetchStrategy: ProviderFetchStrategy {
         }
         let trustedIndex = tokens.index(after: curlIndex)
 
+        let targetSite: QoderWebSite
         if let explicitTarget = explicitTargets.first(where: { $0.index == targetIndex }) {
-            return .site(explicitTarget.site)
+            targetSite = explicitTarget.site
+        } else if targetIndex == trustedIndex,
+                  let trustedTarget = urlTargets.first(where: { $0.index == trustedIndex })
+        {
+            targetSite = trustedTarget.site
+        } else {
+            return .invalid
         }
-        guard targetIndex == trustedIndex,
-              let trustedTarget = urlTargets.first(where: { $0.index == trustedIndex })
+
+        guard let headerSites = self.curlHeaderHostSites(tokens, after: curlIndex),
+              headerSites.allSatisfy({ $0 == targetSite })
         else {
             return .invalid
         }
-        return .site(trustedTarget.site)
+        return .site(targetSite)
     }
 
     private static func curlCommandIndex(_ tokens: [String]) -> Array<String>.Index? {
@@ -439,6 +447,43 @@ struct QoderWebFetchStrategy: ProviderFetchStrategy {
             index = tokens.index(after: index)
         }
         return targets
+    }
+
+    private static func curlHeaderHostSites(
+        _ tokens: [String],
+        after curlIndex: Array<String>.Index) -> [QoderWebSite]?
+    {
+        var sites: [QoderWebSite] = []
+        var index = tokens.index(after: curlIndex)
+        while index < tokens.endIndex {
+            let token = tokens[index]
+            let lowercased = token.lowercased()
+            let headerValue: String?
+            if token == "-H" || lowercased == "--header" {
+                let valueIndex = tokens.index(after: index)
+                guard valueIndex < tokens.endIndex else { return nil }
+                headerValue = tokens[valueIndex]
+                index = tokens.index(after: valueIndex)
+            } else if lowercased.hasPrefix("--header=") {
+                headerValue = String(token.dropFirst("--header=".count))
+                index = tokens.index(after: index)
+            } else if token.hasPrefix("-H"), token.count > 2 {
+                headerValue = String(token.dropFirst(2))
+                index = tokens.index(after: index)
+            } else {
+                index = tokens.index(after: index)
+                continue
+            }
+
+            guard let headerValue else { continue }
+            let pieces = headerValue.split(separator: ":", maxSplits: 1)
+            guard pieces.count == 2 else { continue }
+            let name = pieces[0].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard name == "host" else { continue }
+            guard let site = self.site(forHost: String(pieces[1])) else { return nil }
+            sites.append(site)
+        }
+        return sites
     }
 
     private static func hostHeaderSites(_ rawHeader: String) -> [QoderWebSite?] {
