@@ -5,8 +5,6 @@ extension UsageStore {
     private struct ProviderRefreshOutcomeContext {
         let generation: UInt64
         let codexExpectedGuard: CodexAccountScopedRefreshGuard?
-        let claudeCredentialsChanged: Bool
-        let shouldConsumeClaudeKeychainFingerprint: Bool
         let claudeOAuthHistoryPersistentRefHash: String?
     }
 
@@ -188,7 +186,6 @@ extension UsageStore {
             }
             return await group.next()!
         }
-        guard self.isCurrentProviderRefreshGeneration(provider, generation: generation) else { return }
         let claudeAuthFingerprintAfterFetch = provider == .claude
             ? await Self.captureClaudeAuthFingerprintToken()
             : nil
@@ -210,6 +207,14 @@ extension UsageStore {
             beforeFetch: claudeAuthStateBeforeFetch,
             afterFetchFingerprintToken: claudeAuthFingerprintAfterFetch,
             afterFetchPersistentRefHash: claudeKeychainPersistentRefHashAfterFetch)
+        // Credential detection consumes change markers. Clean up before rejecting a superseded generation;
+        // replacement refreshes wait for their predecessor, so they cannot race this state reset.
+        if claudeCredentialsChanged {
+            await self.clearClaudeCredentialDerivedStateForCredentialSwap()
+        }
+        if shouldConsumeClaudeKeychainFingerprint {
+            _ = await Self.consumeClaudeKeychainFingerprintChangeWithoutPrompt()
+        }
         guard self.isCurrentProviderRefreshGeneration(provider, generation: generation) else { return }
         await self.applyProviderRefreshOutcome(
             provider: provider,
@@ -217,8 +222,6 @@ extension UsageStore {
             context: ProviderRefreshOutcomeContext(
                 generation: generation,
                 codexExpectedGuard: codexExpectedGuard,
-                claudeCredentialsChanged: claudeCredentialsChanged,
-                shouldConsumeClaudeKeychainFingerprint: shouldConsumeClaudeKeychainFingerprint,
                 claudeOAuthHistoryPersistentRefHash: claudeOAuthHistoryPersistentRefHash))
     }
 
@@ -243,9 +246,6 @@ extension UsageStore {
             let backfilled = await MainActor.run { () -> UsageSnapshot? in
                 guard self.isCurrentProviderRefreshGeneration(provider, generation: context.generation) else {
                     return nil
-                }
-                if context.claudeCredentialsChanged {
-                    self.clearClaudeCredentialDerivedStateForCredentialSwapNow()
                 }
                 let resetBackfillSource = provider == .codex
                     ? self.codexLastKnownResetSnapshot(matching: context.codexExpectedGuard)
@@ -276,9 +276,6 @@ extension UsageStore {
                 return backfilled
             }
             guard let backfilled else { return }
-            if context.shouldConsumeClaudeKeychainFingerprint {
-                _ = await Self.consumeClaudeKeychainFingerprintChangeWithoutPrompt()
-            }
             let isClaudeOAuthSample = provider == .claude
                 && result.strategyKind == .oauth
             let claudeOAuthPersistentRefHash: String? = if isClaudeOAuthSample,
@@ -307,7 +304,7 @@ extension UsageStore {
                 self.recordCodexHistoricalSampleIfNeeded(snapshot: backfilled)
             }
         case let .failure(error):
-            // Superseded or explicitly cancelled refreshes are control flow, not provider failures.
+            // Credential-change cleanup already ran above; cancellation is now safe to suppress.
             guard !Self.errorIsCancellation(error) else { return }
             if provider == .codex,
                let codexExpectedGuard = context.codexExpectedGuard,
@@ -317,12 +314,6 @@ extension UsageStore {
             }
             guard self.isCurrentProviderRefreshGeneration(provider, generation: context.generation) else { return }
             self.recordStartupConnectivityRetryableFailure(error)
-            if context.claudeCredentialsChanged {
-                await self.clearClaudeCredentialDerivedStateForCredentialSwap()
-            }
-            if context.shouldConsumeClaudeKeychainFingerprint {
-                _ = await Self.consumeClaudeKeychainFingerprintChangeWithoutPrompt()
-            }
             await self.handleProviderFetchFailure(
                 provider: provider,
                 error: error,
