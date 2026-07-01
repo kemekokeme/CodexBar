@@ -110,7 +110,7 @@ See [CLI configuration](docs/cli-configuration.md) for the full flow.
 - Perplexity — Account usage credits from Perplexity usage data.
 - [Xiaomi MiMo](docs/mimo.md) — Browser cookies for balance and token-plan usage.
 - [Doubao](docs/doubao.md) — API key for Volcengine Ark request-limit probes.
-- [Sakana AI](docs/providers.md#sakana-ai) — Manual Cookie header for 5-hour and weekly quota windows.
+- [Sakana AI](docs/sakana.md) — Manual Cookie header for 5-hour and weekly quota windows.
 - [Abacus AI](docs/abacus.md) — Browser cookie auth for ChatLLM/RouteLLM compute credit tracking.
 - Mistral — Browser cookies for monthly spend tracking.
 - [DeepSeek](docs/deepseek.md) — API key for credit balance tracking (paid vs. granted breakdown).

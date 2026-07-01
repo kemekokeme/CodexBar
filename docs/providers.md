@@ -319,6 +319,7 @@ headers, source selection, provider ordering, and token accounts are stored in `
 - Manual `Cookie:` header from `console.sakana.ai`; no automatic browser import.
 - Reads the billing page and surfaces 5-hour and weekly quota windows when present.
 - Status: none yet.
+- Details: `docs/sakana.md`.
 
 ## Abacus AI
 - Browser cookies (`abacus.ai`, `apps.abacus.ai`) via automatic import or manual header.
