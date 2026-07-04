@@ -8,7 +8,7 @@ read_when:
 
 # Provider Presentation and Focus-Aware Icon — Design
 
-**Status:** proposed; owner signoff required
+**Status:** accepted on 2026-07-04
 **Date:** 2026-07-01
 **Issues:** [#1167](https://github.com/steipete/CodexBar/issues/1167),
 [#780](https://github.com/steipete/CodexBar/issues/780)
@@ -24,8 +24,8 @@ Two opt-in controls should share one presentation policy:
 Provider pins affect status-item layout only. Frontmost-app matching affects the collapsed merged icon only. Neither
 feature changes the selected menu tab, selected account, enabled providers, or Overview contents.
 
-Recommended first implementation: ship provider pins and privacy-safe native app matching as separate PRs after the
-product choices below are approved. Terminal-session inference remains a later, separately reviewed opt-in.
+Implementation should ship provider pins and privacy-safe native app matching as separate PRs. Terminal-session
+inference remains a later, separately reviewed opt-in.
 
 ## Current behavior
 
@@ -223,7 +223,7 @@ values, and unpublished provider/model data.
 
 Each implementation PR should remain independently reversible. Neither changes provider fetching or account state.
 
-## Owner decisions required
+## Accepted owner decisions
 
 | Decision | Recommendation | Alternative and cost |
 | --- | --- | --- |
@@ -236,5 +236,5 @@ Each implementation PR should remain independently reversible. Neither changes p
 
 ## Acceptance
 
-Owner approval of the six recommendations above makes both implementation slices product-clear. Until then this spec
-is the bounded artifact; it intentionally changes no runtime behavior.
+The six recommendations above are approved. This spec is the bounded implementation contract; it intentionally
+changes no runtime behavior.
