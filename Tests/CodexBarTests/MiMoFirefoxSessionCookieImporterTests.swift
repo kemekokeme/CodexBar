@@ -23,6 +23,29 @@ struct MiMoFirefoxSessionCookieImporterTests {
     }
 
     @Test
+    func `too small decoded size falls back to valid backup`() throws {
+        let (temp, profile, backups) = try self.makeFirefoxProfile()
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let currentJSON = #"{"cookies":[]}"#
+        var current = self.mozillaLZ4LiteralFile(currentJSON)
+        var tooSmallSize = UInt32(currentJSON.utf8.count - 1).littleEndian
+        withUnsafeBytes(of: &tooSmallSize) { current.replaceSubrange(8..<12, with: $0) }
+        try current.write(to: backups.appendingPathComponent("recovery.jsonlz4"))
+        let backupJSON = #"{"cookies":[{"host":".xiaomimimo.com","name":"userId","value":"backup-user"}]}"#
+        try self.mozillaLZ4LiteralFile(backupJSON)
+            .write(to: backups.appendingPathComponent("recovery.baklz4"))
+
+        let outcome = MiMoFirefoxSessionCookieImporter.load(profileDirectory: profile)
+
+        guard case let .loaded(records) = outcome else {
+            Issue.record("Expected malformed current state to fall back to the valid backup")
+            return
+        }
+        #expect(records.map(\.value) == ["backup-user"])
+    }
+
+    @Test
     func `canonical large payload bypasses raw size prefix trap`() throws {
         let padding = String(repeating: "x", count: 65520)
         let json = #"{"cookies":[],"padding":"\#(padding)"}"#
@@ -117,6 +140,65 @@ struct MiMoFirefoxSessionCookieImporterTests {
     }
 
     @Test
+    func `input limit stops before older backup`() throws {
+        let (temp, profile, backups) = try self.makeFirefoxProfile()
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try Data(repeating: 0x41, count: 5).write(to: backups.appendingPathComponent("recovery.jsonlz4"))
+        try self.mozillaLZ4LiteralFile(#"{"cookies":[]}"#)
+            .write(to: backups.appendingPathComponent("recovery.baklz4"))
+
+        let outcome = MiMoFirefoxSessionCookieImporter.load(
+            profileDirectory: profile,
+            limits: .init(inputBytes: 4, outputBytes: 1024, cookieRecords: 10))
+
+        guard case .resourceLimited(.inputBytes) = outcome else {
+            Issue.record("Expected the current Firefox input limit to stop backup recovery")
+            return
+        }
+    }
+
+    @Test
+    func `output limit stops before older backup`() throws {
+        let (temp, profile, backups) = try self.makeFirefoxProfile()
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        var oversized = Data([0x6D, 0x6F, 0x7A, 0x4C, 0x7A, 0x34, 0x30, 0x00])
+        var declaredSize = UInt32(129 * 1024 * 1024).littleEndian
+        withUnsafeBytes(of: &declaredSize) { oversized.append(contentsOf: $0) }
+        try oversized.write(to: backups.appendingPathComponent("recovery.jsonlz4"))
+        try self.mozillaLZ4LiteralFile(#"{"cookies":[]}"#)
+            .write(to: backups.appendingPathComponent("recovery.baklz4"))
+
+        let outcome = MiMoFirefoxSessionCookieImporter.load(profileDirectory: profile)
+
+        guard case .resourceLimited(.outputBytes) = outcome else {
+            Issue.record("Expected the current Firefox output limit to stop backup recovery")
+            return
+        }
+    }
+
+    @Test
+    func `cookie limit stops before older backup`() throws {
+        let (temp, profile, backups) = try self.makeFirefoxProfile()
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try self.mozillaLZ4LiteralFile(#"{"cookies":[1,2]}"#)
+            .write(to: backups.appendingPathComponent("recovery.jsonlz4"))
+        try self.mozillaLZ4LiteralFile(#"{"cookies":[]}"#)
+            .write(to: backups.appendingPathComponent("recovery.baklz4"))
+
+        let outcome = MiMoFirefoxSessionCookieImporter.load(
+            profileDirectory: profile,
+            limits: .init(inputBytes: 1024, outputBytes: 1024, cookieRecords: 1))
+
+        guard case .resourceLimited(.cookieRecords) = outcome else {
+            Issue.record("Expected the current Firefox cookie limit to stop backup recovery")
+            return
+        }
+    }
+
+    @Test
     func `candidates follow deterministic firefox order with newest upgrade only`() {
         let profile = URL(fileURLWithPath: "/tmp/firefox/profile", isDirectory: true)
         let backups = profile.appendingPathComponent("sessionstore-backups", isDirectory: true)
@@ -145,6 +227,15 @@ struct MiMoFirefoxSessionCookieImporterTests {
         withUnsafeBytes(of: &decodedSize) { data.append(contentsOf: $0) }
         data.append(self.lz4LiteralBlock(Data(json.utf8)))
         return data
+    }
+
+    private func makeFirefoxProfile() throws -> (temp: URL, profile: URL, backups: URL) {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mimo-firefox-limit-\(UUID().uuidString)", isDirectory: true)
+        let profile = temp.appendingPathComponent("default-release", isDirectory: true)
+        let backups = profile.appendingPathComponent("sessionstore-backups", isDirectory: true)
+        try FileManager.default.createDirectory(at: backups, withIntermediateDirectories: true)
+        return (temp, profile, backups)
     }
 
     private func lz4LiteralBlock(_ payload: Data) -> Data {

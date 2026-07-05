@@ -228,9 +228,20 @@ public enum MiMoCookieImporter {
             let profileID = store.profile.id
             let source = resolvedByProfileID[profileID] ?? BrowserCookieStoreRecords(store: store, records: [])
             guard let profileDirectory = store.databaseURL?.deletingLastPathComponent() else { continue }
-            let sessionRecords = MiMoFirefoxSessionCookieImporter.records(
+            let loadOutcome = MiMoFirefoxSessionCookieImporter.load(
                 profileDirectory: profileDirectory,
                 logger: logger)
+            let sessionRecords: [BrowserCookieRecord]
+            switch loadOutcome {
+            case let .loaded(records):
+                sessionRecords = records
+            case .unavailable, .resourceLimited:
+                if resolvedByProfileID[profileID] == nil {
+                    continue
+                }
+                resolvedByProfileID[profileID] = source
+                continue
+            }
             let sessionCookies = BrowserCookieClient.makeHTTPCookies(sessionRecords, origin: .domainBased)
             guard MiMoCookieHeader.header(from: sessionCookies) != nil else {
                 if resolvedByProfileID[profileID] == nil {
@@ -345,24 +356,45 @@ public enum MiMoCookieImporter {
 }
 
 enum MiMoFirefoxSessionCookieImporter {
+    enum ResourceLimit: Equatable, Sendable {
+        case inputBytes
+        case outputBytes
+        case cookieRecords
+    }
+
     enum ImportError: LocalizedError {
-        case inputTooLarge
-        case outputTooLarge
-        case resourceLimit(String)
+        case resourceLimit(ResourceLimit)
         case invalidData(String)
 
         var errorDescription: String? {
             switch self {
-            case .inputTooLarge:
+            case .resourceLimit(.inputBytes):
                 "Firefox session restore file exceeds the 64 MiB safety limit."
-            case .outputTooLarge:
+            case .resourceLimit(.outputBytes):
                 "Firefox session restore data exceeds the 128 MiB safety limit."
-            case let .resourceLimit(message):
-                message
+            case .resourceLimit(.cookieRecords):
+                "Firefox session restore contains too many cookie records."
             case let .invalidData(message):
                 message
             }
         }
+    }
+
+    enum LoadOutcome {
+        case loaded([BrowserCookieRecord])
+        case unavailable
+        case resourceLimited(ResourceLimit)
+    }
+
+    struct Limits: Sendable {
+        var inputBytes: Int
+        var outputBytes: Int
+        var cookieRecords: Int
+
+        static let `default` = Limits(
+            inputBytes: MiMoFirefoxSessionCookieImporter.maxInputBytes,
+            outputBytes: MiMoFirefoxSessionCookieImporter.maxOutputBytes,
+            cookieRecords: MiMoFirefoxSessionCookieImporter.maxCookieRecords)
     }
 
     private static let maxInputBytes = 64 * 1024 * 1024
@@ -380,39 +412,55 @@ enum MiMoFirefoxSessionCookieImporter {
         now: Date = Date(),
         logger: ((String) -> Void)? = nil) -> [BrowserCookieRecord]
     {
+        switch self.load(profileDirectory: profileDirectory, now: now, logger: logger) {
+        case let .loaded(records): records
+        case .unavailable, .resourceLimited: []
+        }
+    }
+
+    static func load(
+        profileDirectory: URL,
+        now: Date = Date(),
+        limits: Limits = .default,
+        logger: ((String) -> Void)? = nil) -> LoadOutcome
+    {
         let files = self.sessionRestoreFiles(profileDirectory: profileDirectory)
         for file in files {
             do {
-                let data = try self.readData(from: file)
-                let jsonData = try self.decodeSessionRestoreData(data)
-                let records = try self.cookieRecords(fromJSONData: jsonData, now: now)
+                let data = try self.readData(from: file, maxBytes: limits.inputBytes)
+                let jsonData = try self.decodeSessionRestoreData(data, maxOutputBytes: limits.outputBytes)
+                let records = try self.cookieRecords(
+                    fromJSONData: jsonData,
+                    now: now,
+                    maxRecords: limits.cookieRecords)
                 logger?(
                     "\(profileDirectory.lastPathComponent): read \(records.count) MiMo session cookie(s) " +
                         "from \(file.lastPathComponent)")
                 // The first valid Firefox state is authoritative, even when it records logout or partial auth.
-                return records
-            } catch ImportError.inputTooLarge, ImportError.outputTooLarge, ImportError.resourceLimit {
+                return .loaded(records)
+            } catch let ImportError.resourceLimit(limit) {
                 logger?(
                     "\(profileDirectory.lastPathComponent): rejected unsafe Firefox session restore " +
                         "\(file.lastPathComponent)")
+                return .resourceLimited(limit)
             } catch {
                 logger?(
                     "\(profileDirectory.lastPathComponent): could not read Firefox session restore " +
                         "\(file.lastPathComponent): \(error.localizedDescription)")
             }
         }
-        return []
+        return .unavailable
     }
 
     static func readData(
         from file: URL,
         maxBytes: Int = MiMoFirefoxSessionCookieImporter.maxInputBytes) throws -> Data
     {
-        guard maxBytes >= 0, maxBytes < Int.max else { throw ImportError.inputTooLarge }
+        guard maxBytes >= 0, maxBytes < Int.max else { throw ImportError.resourceLimit(.inputBytes) }
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
         let data = try handle.read(upToCount: maxBytes + 1) ?? Data()
-        guard data.count <= maxBytes else { throw ImportError.inputTooLarge }
+        guard data.count <= maxBytes else { throw ImportError.resourceLimit(.inputBytes) }
         return data
     }
 
@@ -451,7 +499,7 @@ enum MiMoFirefoxSessionCookieImporter {
         _ data: Data,
         maxOutputBytes: Int = MiMoFirefoxSessionCookieImporter.maxOutputBytes) throws -> Data
     {
-        guard maxOutputBytes >= 0 else { throw ImportError.outputTooLarge }
+        guard maxOutputBytes >= 0 else { throw ImportError.resourceLimit(.outputBytes) }
         guard data.starts(with: self.mozillaLZ4Magic) else {
             throw ImportError.invalidData("Invalid Firefox session restore header.")
         }
@@ -464,8 +512,8 @@ enum MiMoFirefoxSessionCookieImporter {
             (Int(sizeBytes[1]) << 8) |
             (Int(sizeBytes[2]) << 16) |
             (Int(sizeBytes[3]) << 24)
-        guard declaredSize <= maxOutputBytes else { throw ImportError.outputTooLarge }
-        let decoded = try self.decodeLZ4Block(Data(payload.dropFirst(4)), maxOutputBytes: declaredSize)
+        guard declaredSize <= maxOutputBytes else { throw ImportError.resourceLimit(.outputBytes) }
+        let decoded = try self.decodeLZ4Block(Data(payload.dropFirst(4)), maxOutputBytes: maxOutputBytes)
         guard decoded.count == declaredSize else {
             throw ImportError.invalidData("Firefox session restore decoded size does not match its header.")
         }
@@ -485,7 +533,7 @@ enum MiMoFirefoxSessionCookieImporter {
             throw ImportError.invalidData("Firefox session restore cookies are not an array.")
         }
         guard cookies.count <= maxRecords else {
-            throw ImportError.resourceLimit("Firefox session restore contains too many cookie records.")
+            throw ImportError.resourceLimit(.cookieRecords)
         }
         var records: [BrowserCookieRecord] = []
         for rawCookie in cookies {
@@ -613,7 +661,9 @@ enum MiMoFirefoxSessionCookieImporter {
             guard literalLength <= bytes.count - index else {
                 throw ImportError.invalidData("Invalid LZ4 literal length.")
             }
-            guard literalLength <= maxOutputBytes - output.count else { throw ImportError.outputTooLarge }
+            guard literalLength <= maxOutputBytes - output.count else {
+                throw ImportError.resourceLimit(.outputBytes)
+            }
             output.append(contentsOf: bytes[index..<index + literalLength])
             index += literalLength
 
@@ -635,7 +685,9 @@ enum MiMoFirefoxSessionCookieImporter {
                     index: &index,
                     limit: maxOutputBytes - matchLength)
             }
-            guard matchLength <= maxOutputBytes - output.count else { throw ImportError.outputTooLarge }
+            guard matchLength <= maxOutputBytes - output.count else {
+                throw ImportError.resourceLimit(.outputBytes)
+            }
 
             for _ in 0..<matchLength {
                 output.append(output[output.count - offset])
@@ -650,7 +702,9 @@ enum MiMoFirefoxSessionCookieImporter {
         while index < bytes.count {
             let next = Int(bytes[index])
             index += 1
-            guard length <= limit, next <= limit - length else { throw ImportError.outputTooLarge }
+            guard length <= limit, next <= limit - length else {
+                throw ImportError.resourceLimit(.outputBytes)
+            }
             length += next
             if next != 255 { break }
         }
