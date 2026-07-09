@@ -6,6 +6,7 @@
 - Agent Sessions: list and focus live local or SSH-discovered Codex and Claude Code sessions from the menu and CLI.
 - Claude CLI: surface model-scoped weekly limits alongside all-model usage without duplicating matching web limits. Thanks @janpollak!
 - Documentation: add detailed setup and troubleshooting references for Perplexity, Mistral, and Qoder. Thanks @kiranmagic7!
+- Quota warnings: add opt-in predictive pace alerts for Codex and Claude session and weekly limits, with one alert per risk episode. Thanks @vincent-peng!
 
 ### Fixed
 - Quota warnings: use compact per-window threshold editors that save on focus loss, Return, or window close while preserving provider inheritance. Thanks @Zihao-Qi!

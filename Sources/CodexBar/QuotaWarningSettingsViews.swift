@@ -4,18 +4,36 @@ import AppKit
 #endif
 import SwiftUI
 
+struct QuotaWarningSettingsVisibility: Equatable {
+    let showsThresholdControls: Bool
+    let showsDeliveryControls: Bool
+
+    init(thresholdWarningsEnabled: Bool, predictiveWarningsEnabled: Bool) {
+        self.showsThresholdControls = thresholdWarningsEnabled
+        self.showsDeliveryControls = thresholdWarningsEnabled || predictiveWarningsEnabled
+    }
+}
+
 @MainActor
 struct GlobalQuotaWarningSettingsView: View {
     @Bindable var settings: SettingsStore
+    let showsThresholdControls: Bool
+
+    init(settings: SettingsStore, showsThresholdControls: Bool = true) {
+        self.settings = settings
+        self.showsThresholdControls = showsThresholdControls
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            QuotaWarningWindowThresholdRows(settings: self.settings)
+            if self.showsThresholdControls {
+                QuotaWarningWindowThresholdRows(settings: self.settings)
 
-            Text(L("quota_warning_global_threshold_subtitle"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(L("quota_warning_global_threshold_subtitle"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Toggle(isOn: self.$settings.quotaWarningSoundEnabled) {
                 Text(L("quota_warning_sound"))

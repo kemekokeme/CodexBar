@@ -83,6 +83,40 @@ extension UsageStore {
         guard self.openAIDashboardAttachmentAuthorized else { return nil }
         return self.openAIDashboard
     }
+
+    private static func isRunningTestsProcess() -> Bool {
+        let environment = ProcessInfo.processInfo.environment
+        if environment["XCTestConfigurationFilePath"] != nil { return true }
+        if environment["XCTestSessionIdentifier"] != nil { return true }
+        if environment["SWIFT_TESTING_ENABLED"] != nil { return true }
+        return CommandLine.arguments.contains { argument in
+            argument.contains("xctest") || argument.contains("swift-testing")
+        }
+    }
+
+    /// Returns the login method (plan type) for the specified provider, if available.
+    private func loginMethod(for provider: UsageProvider) -> String? {
+        self.snapshots[provider]?.loginMethod(for: provider)
+    }
+
+    /// Returns true if the Claude account appears to be a subscription (Max, Pro, Ultra, Team).
+    /// Returns false for API users or when plan cannot be determined.
+    func isClaudeSubscription() -> Bool {
+        Self.isSubscriptionPlan(self.loginMethod(for: .claude))
+    }
+
+    /// Determines if a login method string indicates a Claude subscription plan.
+    /// Known subscription indicators: Max, Pro, Ultra, Team (case-insensitive).
+    nonisolated static func isSubscriptionPlan(_ loginMethod: String?) -> Bool {
+        ClaudePlan.isSubscriptionLoginMethod(loginMethod)
+    }
+
+    var preferredSnapshot: UsageSnapshot? {
+        for provider in self.enabledProviders() {
+            if let snap = self.snapshots[provider] { return snap }
+        }
+        return nil
+    }
 }
 
 @MainActor
@@ -262,6 +296,7 @@ final class UsageStore {
     @ObservationIgnored var lastKnownSessionRemaining: [UsageProvider: Double] = [:]
     @ObservationIgnored var lastKnownSessionWindowSource: [UsageProvider: SessionQuotaWindowSource] = [:]
     @ObservationIgnored var quotaWarningState: [QuotaWarningStateKey: QuotaWarningState] = [:]
+    @ObservationIgnored var predictivePaceWarningNotifiedKeys: Set<PredictivePaceWarningStateKey> = []
     @ObservationIgnored var lastPermissionPromptNotificationAt: [UsageProvider: Date] = [:]
     @ObservationIgnored var lastTokenFetchAt: [UsageProvider: Date] = [:]
     @ObservationIgnored var lastTokenFetchScope: [UsageProvider: String] = [:]
@@ -359,40 +394,6 @@ final class UsageStore {
         Task { await self.refresh() }
         self.startTimer()
         self.startTokenTimer()
-    }
-
-    private static func isRunningTestsProcess() -> Bool {
-        let environment = ProcessInfo.processInfo.environment
-        if environment["XCTestConfigurationFilePath"] != nil { return true }
-        if environment["XCTestSessionIdentifier"] != nil { return true }
-        if environment["SWIFT_TESTING_ENABLED"] != nil { return true }
-        return CommandLine.arguments.contains { argument in
-            argument.contains("xctest") || argument.contains("swift-testing")
-        }
-    }
-
-    /// Returns the login method (plan type) for the specified provider, if available.
-    private func loginMethod(for provider: UsageProvider) -> String? {
-        self.snapshots[provider]?.loginMethod(for: provider)
-    }
-
-    /// Returns true if the Claude account appears to be a subscription (Max, Pro, Ultra, Team).
-    /// Returns false for API users or when plan cannot be determined.
-    func isClaudeSubscription() -> Bool {
-        Self.isSubscriptionPlan(self.loginMethod(for: .claude))
-    }
-
-    /// Determines if a login method string indicates a Claude subscription plan.
-    /// Known subscription indicators: Max, Pro, Ultra, Team (case-insensitive).
-    nonisolated static func isSubscriptionPlan(_ loginMethod: String?) -> Bool {
-        ClaudePlan.isSubscriptionLoginMethod(loginMethod)
-    }
-
-    var preferredSnapshot: UsageSnapshot? {
-        for provider in self.enabledProviders() {
-            if let snap = self.snapshots[provider] { return snap }
-        }
-        return nil
     }
 
     var iconStyle: IconStyle {
@@ -886,6 +887,15 @@ final class UsageStore {
             provider: provider,
             soundEnabled: self.settings.quotaWarningSoundEnabled,
             onScreenAlertEnabled: self.settings.quotaWarningOnScreenAlertEnabled)
+    }
+
+    func postPredictivePaceWarning(_ event: PredictivePaceWarningEvent, provider: UsageProvider, now: Date) {
+        self.sessionQuotaNotifier.postPredictivePaceWarning(
+            event: event,
+            provider: provider,
+            soundEnabled: self.settings.quotaWarningSoundEnabled,
+            onScreenAlertEnabled: self.settings.quotaWarningOnScreenAlertEnabled,
+            now: now)
     }
 
     func handleSessionQuotaTransition(provider: UsageProvider, snapshot: UsageSnapshot) {

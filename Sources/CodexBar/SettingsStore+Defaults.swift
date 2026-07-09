@@ -131,6 +131,16 @@ extension SettingsStore {
         }
     }
 
+    var predictivePaceWarningNotificationsEnabled: Bool {
+        get { self.defaultsState.predictivePaceWarningNotificationsEnabled }
+        set {
+            guard self.defaultsState.predictivePaceWarningNotificationsEnabled != newValue else { return }
+            self.defaultsState.predictivePaceWarningNotificationsEnabled = newValue
+            self.userDefaults.set(newValue, forKey: "predictivePaceWarningNotificationsEnabled")
+            self.noteBackgroundWorkSettingsChanged()
+        }
+    }
+
     var quotaWarningThresholds: [Int] {
         get { QuotaWarningThresholds.sanitized(self.defaultsState.quotaWarningThresholdsRaw) }
         set {
