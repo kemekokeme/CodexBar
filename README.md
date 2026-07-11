@@ -129,6 +129,7 @@ See [CLI configuration](docs/cli-configuration.md) for the full flow.
 - [GroqCloud](docs/groqcloud.md) — API key for Enterprise Prometheus request/token/cache-hit metrics.
 - [LLM Proxy](docs/llm-proxy.md) — API key + base URL for aggregate proxy quota stats and provider breakdowns.
 - [ClawRouter](docs/clawrouter.md) — API key for monthly budget, spend, requests, tokens, and routed-provider usage.
+- [sub2api](docs/sub2api.md) — Self-hosted gateway key quota, subscription limits, wallet balance, and per-key usage.
 - [Wayfinder](docs/wayfinder.md) — Local router gateway polling for health, per-route breakdown, savings, and decision latency.
 - [LiteLLM](docs/litellm.md) — Virtual key + proxy URL for personal and team budget/spend tracking.
 - [Deepgram](docs/deepgram.md) — API key usage summaries across speech, agent, token, and TTS metrics.

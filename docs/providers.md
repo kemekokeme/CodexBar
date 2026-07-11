@@ -455,6 +455,13 @@ headers, source selection, provider ordering, and token accounts are stored in `
 - Read-only: never calls the gateway's chat endpoints, and the polled endpoints return accounting metadata only — no prompt text.
 - Details: `docs/wayfinder.md`.
 
+## sub2api
+- API key from config, a labeled token account, or `SUB2API_API_KEY`; base URL from config `enterpriseHost` or `SUB2API_BASE_URL`.
+- Reads `GET /v1/usage` for key quota, 5-hour/day/week rate limits, subscription limits, wallet balance, and key-scoped request/token/cost totals.
+- Store one labeled token account per sub2api group. Wallet balance is user-scoped and is never summed across keys.
+- Base URLs must use HTTPS, except loopback HTTP for local development.
+- Details: `docs/sub2api.md`.
+
 ## AWS Bedrock
 - AWS credentials from `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optional `AWS_SESSION_TOKEN`.
 - Region from `AWS_REGION` / `AWS_DEFAULT_REGION`, defaulting to `us-east-1`.

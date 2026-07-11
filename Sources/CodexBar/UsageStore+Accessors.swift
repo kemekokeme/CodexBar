@@ -64,6 +64,8 @@ extension UsageStore {
             return CrossModelSettingsError.missingToken.errorDescription
         case .clawrouter:
             return ClawRouterUsageError.missingCredentials.errorDescription
+        case .sub2api:
+            return Sub2APIUsageError.missingCredentials.errorDescription
         case .azureopenai:
             return AzureOpenAISettingsError.missingAPIKey.errorDescription
         case .elevenlabs:
