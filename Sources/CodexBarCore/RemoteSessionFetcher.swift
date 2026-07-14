@@ -26,7 +26,7 @@ public enum TailscaleStatusParser {
     /// Returns `nil` when `data` is not recognizable Tailscale status JSON — a failed, wrong, or
     /// non-Tailscale `tailscale` binary — so callers can fall through to the next candidate. Returns a
     /// possibly-empty list for a valid status that simply has no eligible peers (a real answer, stop).
-    public static func parseHosts(from data: Data, excludingLocalHost localHost: String? = nil) -> [String]? {
+    package static func parseHosts(from data: Data, excludingLocalHost localHost: String? = nil) -> [String]? {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               root["Self"] != nil || root["Version"] != nil || root["BackendState"] != nil || root["Peer"] != nil
         else { return nil }
@@ -100,7 +100,7 @@ public struct RemoteSessionFetcher: Sendable {
     /// Returns the first candidate's parsed hosts (possibly empty), or `[]` if none succeed. This keeps
     /// the app-binary fallback working even when an earlier — but non-functional — `tailscale` variant
     /// is installed (e.g. an open-source/Homebrew CLI that isn't the active client).
-    public static func firstDiscoveredHosts(
+    package static func firstDiscoveredHosts(
         candidates: [String],
         localHost: String?,
         run: (String) async -> Data?) async -> [String]
@@ -196,7 +196,7 @@ public struct RemoteSessionFetcher: Sendable {
     /// wrapper, but a GUI-launched CodexBar inherits a minimal `PATH` (`/usr/bin:/bin`)
     /// that omits the standard CLI locations, so we also probe them explicitly before
     /// falling back to the app binary itself.
-    public static func tailscaleBinaryCandidates(path: String?) -> [String] {
+    package static func tailscaleBinaryCandidates(path: String?) -> [String] {
         let pathDirs = path?.split(separator: ":").map(String.init) ?? []
         var seen = Set<String>()
         var candidates = (pathDirs + ["/usr/local/bin", "/opt/homebrew/bin"])
@@ -220,7 +220,7 @@ public struct RemoteSessionFetcher: Sendable {
     /// CLI wrapper (itself a `/bin/sh` script that already exports `SHLVL`), and injecting it
     /// unconditionally keeps CLI mode guaranteed regardless of which binary `tailscaleBinary` resolves.
     /// An existing `TERM`/`SHLVL` (real terminal context) is left untouched.
-    public static func tailscaleCLIEnvironment(from environment: [String: String]) -> [String: String] {
+    package static func tailscaleCLIEnvironment(from environment: [String: String]) -> [String: String] {
         guard environment["TERM"] == nil, environment["SHLVL"] == nil else { return environment }
         var environment = environment
         environment["SHLVL"] = "1"
