@@ -6,6 +6,7 @@ lint_result="${1:-}"
 changes_result="${2:-}"
 macos_tests_required="${3:-}"
 macos_test_result="${4:-}"
+macos_tests_deferred="${5:-}"
 
 if [[ "$lint_result" != "success" ]]; then
   printf 'lint job finished with %s\n' "${lint_result:-<empty>}" >&2
@@ -19,10 +20,23 @@ fi
 
 case "${macos_tests_required}:${macos_test_result}" in
   true:success)
+    if [[ "$macos_tests_deferred" != false ]]; then
+      printf 'macOS test gate marked a required test as deferred\n' >&2
+      exit 1
+    fi
     printf 'Lint and macOS Swift test shards passed.\n'
     ;;
   false:skipped)
-    printf 'Lint passed; macOS Swift tests skipped for docs/site-only changes.\n'
+    if [[ "$macos_tests_deferred" == true ]]; then
+      printf 'Lint passed; macOS Swift tests are deferred until the pull request is ready for review.\n'
+      exit 0
+    fi
+    if [[ "$macos_tests_deferred" != false ]]; then
+      printf 'macOS test gate returned invalid deferred state: %s\n' \
+        "${macos_tests_deferred:-<empty>}" >&2
+      exit 1
+    fi
+    printf 'Lint passed; macOS Swift tests skipped by the macOS test gate.\n'
     ;;
   *)
     printf 'macOS test gate/result mismatch: required=%s result=%s\n' \
