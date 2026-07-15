@@ -32,39 +32,47 @@ struct ClaudeOAuthDelegatedRefreshCoordinatorTests {
     private func withCoordinatorOverrides<T>(
         isolateState: Bool = true,
         cliAvailable: Bool? = nil,
+        promptMode: ClaudeOAuthKeychainPromptMode = .always,
+        keychainAccessDisabled: Bool = false,
         touchAuthPath: (@Sendable (TimeInterval, [String: String]) async throws -> Void)? = nil,
         keychainFingerprint: (@Sendable () -> ClaudeOAuthCredentialsStore.ClaudeKeychainFingerprint?)? = nil,
         operation: () async throws -> T) async rethrows -> T
     {
-        if isolateState {
-            return try await ClaudeOAuthDelegatedRefreshCoordinator.withIsolatedStateForTesting {
+        try await KeychainAccessGate.withTaskOverrideForTesting(keychainAccessDisabled) {
+            try await ClaudeOAuthKeychainPromptPreference.withTaskOverrideForTesting(promptMode) {
+                if isolateState {
+                    return try await ClaudeOAuthDelegatedRefreshCoordinator.withIsolatedStateForTesting {
+                        ClaudeOAuthDelegatedRefreshCoordinator.resetForTesting()
+                        defer { ClaudeOAuthDelegatedRefreshCoordinator.resetForTesting() }
+                        return try await ClaudeOAuthDelegatedRefreshCoordinator
+                            .withKeychainFingerprintOverrideForTesting(
+                                keychainFingerprint)
+                            {
+                                try await ClaudeOAuthDelegatedRefreshCoordinator.withCLIAvailableOverrideForTesting(
+                                    cliAvailable)
+                                {
+                                    try await ClaudeOAuthDelegatedRefreshCoordinator
+                                        .withTouchAuthPathOverrideForTesting(
+                                            touchAuthPath)
+                                        {
+                                            try await operation()
+                                        }
+                                }
+                            }
+                    }
+                }
                 ClaudeOAuthDelegatedRefreshCoordinator.resetForTesting()
                 defer { ClaudeOAuthDelegatedRefreshCoordinator.resetForTesting() }
                 return try await ClaudeOAuthDelegatedRefreshCoordinator.withKeychainFingerprintOverrideForTesting(
                     keychainFingerprint)
                 {
-                    try await ClaudeOAuthDelegatedRefreshCoordinator.withCLIAvailableOverrideForTesting(
-                        cliAvailable)
-                    {
+                    try await ClaudeOAuthDelegatedRefreshCoordinator.withCLIAvailableOverrideForTesting(cliAvailable) {
                         try await ClaudeOAuthDelegatedRefreshCoordinator.withTouchAuthPathOverrideForTesting(
                             touchAuthPath)
                         {
                             try await operation()
                         }
                     }
-                }
-            }
-        }
-        ClaudeOAuthDelegatedRefreshCoordinator.resetForTesting()
-        defer { ClaudeOAuthDelegatedRefreshCoordinator.resetForTesting() }
-        return try await ClaudeOAuthDelegatedRefreshCoordinator.withKeychainFingerprintOverrideForTesting(
-            keychainFingerprint)
-        {
-            try await ClaudeOAuthDelegatedRefreshCoordinator.withCLIAvailableOverrideForTesting(cliAvailable) {
-                try await ClaudeOAuthDelegatedRefreshCoordinator.withTouchAuthPathOverrideForTesting(
-                    touchAuthPath)
-                {
-                    try await operation()
                 }
             }
         }
@@ -122,6 +130,50 @@ struct ClaudeOAuthDelegatedRefreshCoordinatorTests {
         })
 
         #expect(outcome == .cliUnavailable)
+    }
+
+    @Test(arguments: [
+        (ClaudeOAuthKeychainPromptMode.onlyOnUserAction, false),
+        (ClaudeOAuthKeychainPromptMode.never, false),
+        (ClaudeOAuthKeychainPromptMode.always, true),
+    ])
+    func `background refresh never launches delegated Claude CLI without Keychain opt in`(
+        promptMode: ClaudeOAuthKeychainPromptMode,
+        keychainAccessDisabled: Bool) async
+    {
+        final class TouchCounter: @unchecked Sendable {
+            private let lock = NSLock()
+            private var value = 0
+
+            func increment() {
+                self.lock.lock()
+                self.value += 1
+                self.lock.unlock()
+            }
+
+            func count() -> Int {
+                self.lock.lock()
+                defer { self.lock.unlock() }
+                return self.value
+            }
+        }
+
+        let touches = TouchCounter()
+        let outcome = await self.withCoordinatorOverrides(
+            cliAvailable: true,
+            promptMode: promptMode,
+            keychainAccessDisabled: keychainAccessDisabled,
+            touchAuthPath: { _, _ in touches.increment() },
+            operation: {
+                await ProviderInteractionContext.$current.withValue(.background) {
+                    await ClaudeOAuthDelegatedRefreshCoordinator.attempt(
+                        now: Date(timeIntervalSince1970: 20001),
+                        timeout: 0.1)
+                }
+            })
+
+        #expect(outcome == .skippedByPromptPolicy)
+        #expect(touches.count() == 0)
     }
 
     @Test
@@ -693,10 +745,7 @@ struct ClaudeOAuthDelegatedRefreshCoordinatorTests {
                     }
                 })
 
-            guard case .attemptedFailed = outcome else {
-                Issue.record("Expected .attemptedFailed outcome")
-                return
-            }
+            #expect(outcome == .skippedByPromptPolicy)
             #expect(securityReadCounter.count < 1)
         }
     }

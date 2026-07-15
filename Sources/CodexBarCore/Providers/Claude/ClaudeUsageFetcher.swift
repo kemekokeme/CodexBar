@@ -401,7 +401,7 @@ public struct ClaudeUsageFetcher: ClaudeUsageFetching, Sendable {
             do {
                 if self.fetcher.oauthKeychainPromptCooldownEnabled {
                     switch delegatedOutcome {
-                    case .skippedByCooldown, .cliUnavailable:
+                    case .skippedByCooldown, .skippedByPromptPolicy, .cliUnavailable:
                         throw ClaudeUsageError.oauthFailed(
                             "Claude OAuth token expired; delegated refresh is unavailable (outcome="
                                 + "\(ClaudeUsageFetcher.delegatedRefreshOutcomeLabel(delegatedOutcome))).")
@@ -925,6 +925,8 @@ extension ClaudeUsageFetcher {
         switch outcome {
         case .skippedByCooldown:
             "skippedByCooldown"
+        case .skippedByPromptPolicy:
+            "skippedByPromptPolicy"
         case .cliUnavailable:
             "cliUnavailable"
         case .attemptedSucceeded:
@@ -948,6 +950,9 @@ extension ClaudeUsageFetcher {
         case .skippedByCooldown:
             return "Claude OAuth token expired and delegated refresh is cooling down. "
                 + "Please retry shortly, or run `claude login`."
+        case .skippedByPromptPolicy:
+            return "Claude OAuth token expired; background refresh is disabled by the Keychain prompt policy. "
+                + "Refresh CodexBar manually or run `claude login`."
         case .cliUnavailable:
             return "Claude OAuth token expired and Claude CLI is not available for delegated refresh. "
                 + "Install/configure `claude`, or run `claude login`."

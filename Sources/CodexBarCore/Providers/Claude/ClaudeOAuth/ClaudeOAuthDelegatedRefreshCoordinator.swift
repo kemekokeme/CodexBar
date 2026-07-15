@@ -19,6 +19,7 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
 
     public enum Outcome: Sendable, Equatable {
         case skippedByCooldown
+        case skippedByPromptPolicy
         case cliUnavailable
         case attemptedSucceeded
         case attemptedFailed(String)
@@ -59,7 +60,7 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
             let outcome = await task.value
             self.clearInFlightTaskIfStillCurrent(id: id, state: state)
             switch outcome {
-            case .attemptedFailed, .skippedByCooldown, .cliUnavailable:
+            case .attemptedFailed, .skippedByCooldown, .skippedByPromptPolicy, .cliUnavailable:
                 return await self.attempt(now: now, timeout: timeout, environment: environment)
             case .attemptedSucceeded:
                 return outcome
@@ -81,6 +82,7 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
         let environment: [String: String]
         let interaction: ProviderInteraction
         let readStrategy: ClaudeOAuthKeychainReadStrategy
+        let promptMode: ClaudeOAuthKeychainPromptMode
         let keychainAccessDisabled: Bool
         #if DEBUG
         let cliAvailableOverride: Bool?
@@ -113,20 +115,24 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
         let attemptID = state.nextAttemptID
         // Detached to avoid inheriting the caller's executor context (e.g. MainActor) and cancellation state.
         #if DEBUG
+        let readStrategy = ClaudeOAuthKeychainReadStrategyPreference.current()
         let configuration = AttemptConfiguration(
             environment: environment,
             interaction: interaction,
-            readStrategy: ClaudeOAuthKeychainReadStrategyPreference.current(),
+            readStrategy: readStrategy,
+            promptMode: ClaudeOAuthKeychainPromptPreference.effectiveMode(readStrategy: readStrategy),
             keychainAccessDisabled: KeychainAccessGate.isDisabled,
             cliAvailableOverride: self.cliAvailableOverrideForTesting,
             touchAuthPathOverride: self.touchAuthPathOverrideForTesting,
             keychainFingerprintOverride: self.keychainFingerprintOverrideForTesting)
         let securityCLIReadOverride = ClaudeOAuthCredentialsStore.currentSecurityCLIReadOverrideForTesting()
         #else
+        let readStrategy = ClaudeOAuthKeychainReadStrategyPreference.current()
         let configuration = AttemptConfiguration(
             environment: environment,
             interaction: interaction,
-            readStrategy: ClaudeOAuthKeychainReadStrategyPreference.current(),
+            readStrategy: readStrategy,
+            promptMode: ClaudeOAuthKeychainPromptPreference.effectiveMode(readStrategy: readStrategy),
             keychainAccessDisabled: KeychainAccessGate.isDisabled)
         #endif
         let task = Task.detached(priority: .utility) {
@@ -158,6 +164,16 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
         configuration: AttemptConfiguration,
         state: AttemptStateStorage) async -> Outcome
     {
+        // `/status` is an opaque Claude CLI invocation and may launch `/usr/bin/security` outside
+        // CodexBar's own no-UI query controls. Background work may not cross that boundary unless
+        // the user explicitly opted into always allowing Keychain access.
+        if configuration.interaction == .background,
+           configuration.keychainAccessDisabled || configuration.promptMode != .always
+        {
+            self.log.info("Claude OAuth delegated refresh skipped by Keychain prompt policy")
+            return .skippedByPromptPolicy
+        }
+
         guard self.isClaudeCLIAvailable(environment: configuration.environment, configuration: configuration) else {
             self.log.info("Claude OAuth delegated refresh skipped: claude CLI unavailable")
             return .cliUnavailable
