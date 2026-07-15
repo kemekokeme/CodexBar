@@ -1,5 +1,5 @@
 ---
-summary: "Cursor provider data sources: browser cookies or stored session; usage + billing via cursor.com APIs."
+summary: "Cursor provider data sources, external-browser account switching, and cursor.com APIs."
 read_when:
   - Debugging Cursor usage parsing
   - Updating Cursor cookie import or session storage
@@ -8,7 +8,7 @@ read_when:
 
 # Cursor provider
 
-Cursor is primarily web-backed. Usage is fetched via browser cookies or a stored WebKit session, with Cursor.app local auth as a final fallback.
+Cursor is primarily web-backed. Usage is fetched via browser cookies, with legacy stored-session cookies and Cursor.app local auth as fallbacks.
 
 ## Data sources + fallback order
 
@@ -25,8 +25,7 @@ Cursor is primarily web-backed. Usage is fetched via browser cookies or a stored
      - `next-auth.session-token`
 
 3) **Stored session cookies** (fallback)
-   - Captured by the "Add Account" WebKit login flow.
-   - Login teardown uses `WebKitTeardown` to avoid Intel WebKit crashes.
+   - Legacy sessions captured by older CodexBar releases remain readable.
    - Stored at: `~/Library/Application Support/CodexBar/cursor-session.json`.
 
 4) **Cursor.app local auth** (last fallback)
@@ -35,7 +34,7 @@ Cursor is primarily web-backed. Usage is fetched via browser cookies or a stored
      - macOS: `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`
      - Linux: `$XDG_CONFIG_HOME/Cursor/User/globalStorage/state.vscdb` (default `~/.config/Cursor/...`)
    - Used only after cookie/session sources fail so existing account-selection precedence stays stable.
-   - On Linux, this is the primary automatic source because browser import and the WebKit login flow are macOS-only.
+   - On Linux, this is the primary automatic source because browser import is macOS-only.
    - Derives Cursor's first-party web-session cookie, then uses the same usage and account endpoints as browser sessions.
    - Account identity comes from that authenticated session; cached app profile fields are not mixed across accounts.
 
@@ -43,11 +42,22 @@ Manual option:
 - Preferences → Providers → Cursor → Cookie source → Manual.
 - Paste the `Cookie:` header from a cursor.com request.
 
+## Add and switch account
+- **Add Account** opens `https://authenticator.cursor.sh/` in the default browser.
+- **Switch Account** opens `https://cursor.com/mismatching-client-account`, Cursor's account-mismatch route.
+- When the system's HTTPS handler is a supported browser, CodexBar opens the route there automatically. When the handler is an intermediary app, CodexBar asks the user to confirm a concrete supported browser before clearing credentials or opening the route.
+- CodexBar pins the original HTTPS route to that concrete browser and polls cookies only from the same application. Interactive login never falls back to another browser, a stored session, or Cursor.app; cancellation or the absence of a supported browser stops before login opens.
+- Before opening either route, CodexBar clears its cached and legacy stored Cursor sessions. Add completes only after the authenticated response includes a Cursor account identity. Switch waits for a different normalized account email.
+- CodexBar checks all available profiles in the selected browser. If more than one distinct eligible Cursor account is signed in, Add and Switch both require an explicit account choice and cache only the chosen session.
+- A successful add or switch selects the Automatic cookie source. Saved manual headers and token accounts remain
+  stored but passive: they do not override browser fetching, cached usage, quota warnings, or utilization/reset
+  ownership. Explicitly selecting a saved token account switches Cursor back to Manual and reactivates it.
+
 ## API endpoints
 - `GET https://cursor.com/api/usage-summary`
   - Plan usage (included), on-demand usage, billing cycle window.
 - `GET https://cursor.com/api/auth/me`
-  - User email + name.
+  - Stable user ID, email, and name.
 - `GET https://cursor.com/api/usage?user=ID`
   - Legacy request-based plan usage (request counts + limits).
 
@@ -58,7 +68,7 @@ Manual option:
 
 ## Linux CLI
 - `codexbar usage --provider cursor` reads the signed-in Cursor app's access token from the Linux global state DB and reuses the same `cursor.com` usage endpoints as macOS.
-- Automatic browser cookie import and the in-app WebKit login flow remain macOS-only.
+- Automatic browser cookie import and the external-browser Add/Switch flow are macOS app features.
 - Manual cookie headers from `~/.config/codexbar/config.json` (or legacy `~/.codexbar/config.json`) work on Linux.
 
 ## Local storage footprint
@@ -84,3 +94,4 @@ The storage detail lists measured paths and their sizes. CodexBar does not delet
 ## Key files
 - `Sources/CodexBarCore/Providers/Cursor/CursorStatusProbe.swift`
 - `Sources/CodexBar/CursorLoginRunner.swift` (login flow)
+- `Sources/CodexBar/Providers/Cursor/CursorConnectionState.swift` (interactive login state)
