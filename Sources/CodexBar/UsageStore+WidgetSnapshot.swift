@@ -101,13 +101,13 @@ extension UsageStore {
         let sessionLabel = if provider == .bedrock || provider == .mistral {
             "Latest billing day"
         } else if provider == .codex {
-            "Today API est."
+            "Today API est. · not billed"
         } else {
             "Today"
         }
         let defaultMonthLabel = snapshot.historyDays == 1 ? "Today" : "\(snapshot.historyDays)d"
         let monthLabel = if provider == .codex {
-            "\(snapshot.historyLabel ?? defaultMonthLabel) API est."
+            "\(snapshot.historyLabel ?? defaultMonthLabel) API est. · not billed"
         } else {
             snapshot.historyLabel ?? defaultMonthLabel
         }

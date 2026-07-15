@@ -22,9 +22,9 @@ struct StatusMenuCostMenuCardTests {
         #expect(visibleLines == [])
 
         let fallbackTitle = StatusItemController.costMenuFallbackAttributedTitle(
-            title: "Cost (estimated)",
+            title: "API-equivalent estimate",
             visibleDetailLines: visibleLines)
-        #expect(fallbackTitle.string == "Cost (estimated)")
+        #expect(fallbackTitle.string == "API-equivalent estimate")
     }
 
     @Test
@@ -46,7 +46,7 @@ struct StatusMenuCostMenuCardTests {
         ])
 
         let fallbackTitle = StatusItemController.costMenuFallbackAttributedTitle(
-            title: "Cost (estimated)",
+            title: "API-equivalent estimate",
             visibleDetailLines: visibleLines)
         #expect(fallbackTitle.string.contains("Today: $74.83 - 87M tokens"))
         #expect(fallbackTitle.string.contains("Last 30 days: $4,279.64 - 5.7B tokens"))
@@ -143,14 +143,14 @@ struct StatusMenuCostMenuCardTests {
 
         #expect(view is any MenuCardMeasuring)
         #expect(abs(view.frame.width - width) <= 0.5)
-        #expect(item.title == "Cost (estimated)")
+        #expect(item.title == "API-equivalent estimate")
         #expect(item.toolTip?.contains("$52,431.09") == true)
         #expect(item.submenu == nil)
     }
 
     @Test
     func `cost menu title distinguishes Codex estimates from billing-backed cost`() {
-        #expect(StatusItemController.costMenuTitleForProvider(.codex) == "Cost (estimated)")
+        #expect(StatusItemController.costMenuTitleForProvider(.codex) == "API-equivalent estimate")
         #expect(StatusItemController.costMenuTitleForProvider(.mistral) == "Cost")
     }
 

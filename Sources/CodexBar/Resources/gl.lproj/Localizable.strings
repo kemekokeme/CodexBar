@@ -687,8 +687,8 @@
 "not_found" = "Non atopado";
 
 /* Cost estimation */
-"cost_header_estimated" = "Custo (estimado)";
-"cost_estimate_hint" = "Estimado a partir de rexistros locais · pode diferir da túa factura";
+"cost_header_estimated" = "Estimación equivalente á API";
+"cost_estimate_hint" = "Uso local × prezos públicos da API · non é unha factura de subscrición nin o valor dun plan";
 
 /* Popup panels */
 "No usage configured." = "Non hai ningún uso configurado.";

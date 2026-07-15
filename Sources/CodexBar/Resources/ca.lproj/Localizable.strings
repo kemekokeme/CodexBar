@@ -693,8 +693,8 @@
 "not_found" = "No trobat";
 
 /* Cost estimation */
-"cost_header_estimated" = "Cost (estimat)";
-"cost_estimate_hint" = "Estimat a partir de registres locals · pot diferir de la vostra factura";
+"cost_header_estimated" = "Estimació equivalent a l'API";
+"cost_estimate_hint" = "Ús local × preus públics de l'API · no és una factura de subscripció ni el valor d'un pla";
 
 /* Popup panels */
 "No usage configured." = "No hi ha cap ús configurat.";

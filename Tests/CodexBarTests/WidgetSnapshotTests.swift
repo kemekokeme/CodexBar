@@ -18,8 +18,8 @@ struct WidgetSnapshotTests {
         let codex = UsageStore.widgetTokenUsageSummary(from: snapshot, provider: .codex)
         let claude = UsageStore.widgetTokenUsageSummary(from: snapshot, provider: .claude)
 
-        #expect(codex?.sessionLabel == "Today API est.")
-        #expect(codex?.last30DaysLabel == "30d API est.")
+        #expect(codex?.sessionLabel == "Today API est. · not billed")
+        #expect(codex?.last30DaysLabel == "30d API est. · not billed")
         #expect(claude?.sessionLabel == "Today")
         #expect(claude?.last30DaysLabel == "30d")
     }

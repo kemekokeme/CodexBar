@@ -103,7 +103,10 @@ extension CodexBarCLI {
         useColor: Bool) -> String
     {
         let name = ProviderDescriptorRegistry.descriptor(for: provider).metadata.displayName
-        let header = Self.costHeaderLine("\(name) Cost (API-rate estimate)", useColor: useColor)
+        let title = provider == .codex
+            ? "\(name) API-equivalent estimate (not billed)"
+            : "\(name) Cost (API-rate estimate)"
+        let header = Self.costHeaderLine(title, useColor: useColor)
         if groupBy == .project, provider == .codex {
             return Self.renderProjectCostText(header: header, snapshot: snapshot)
         }

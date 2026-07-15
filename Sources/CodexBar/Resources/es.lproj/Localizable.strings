@@ -703,8 +703,8 @@
 "not_found" = "No encontrado";
 
 /* Cost estimation */
-"cost_header_estimated" = "Coste (estimado)";
-"cost_estimate_hint" = "Estimado a partir de registros locales · puede diferir de tu factura";
+"cost_header_estimated" = "Estimación equivalente a la API";
+"cost_estimate_hint" = "Uso local × precios públicos de la API · no es una factura de suscripción ni el valor de un plan";
 
 /* Popup panels */
 "No usage configured." = "No hay uso configurado.";
