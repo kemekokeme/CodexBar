@@ -84,16 +84,6 @@ enum CLIClaudeSwapCards {
     typealias AccountListReader = @Sendable (String) async throws -> ClaudeSwapAccountList
     typealias AmbientFetch = @Sendable () async -> UsageCommandOutput
 
-    private enum ReadResult: Sendable {
-        case success(ClaudeSwapAccountList)
-        case failure(String)
-    }
-
-    private enum ChildResult: @unchecked Sendable {
-        case ambient(UsageCommandOutput)
-        case claudeSwap(ReadResult)
-    }
-
     static func executablePath(from config: ProviderConfig?) -> String {
         config?.sanitizedClaudeSwapExecutablePath ?? ""
     }
@@ -135,53 +125,27 @@ enum CLIClaudeSwapCards {
     {
         guard eligible else { return await ambientFetch() }
 
-        var ambientOutput: UsageCommandOutput?
-        var readResult: ReadResult?
-        await withTaskGroup(of: ChildResult.self) { group in
-            group.addTask {
-                let output = await ambientFetch()
-                return .ambient(output)
-            }
-            group.addTask {
-                do {
-                    let list = try await accountListReader(executablePath)
-                    return .claudeSwap(.success(list))
-                } catch {
-                    let diagnostic = CLIClaudeSwapText.sanitizeDiagnostic(error.localizedDescription)
-                    let message = diagnostic.isEmpty ? "claude-swap list failed." : diagnostic
-                    return .claudeSwap(.failure(message))
-                }
-            }
-            for await result in group {
-                switch result {
-                case let .ambient(output):
-                    ambientOutput = output
-                case let .claudeSwap(output):
-                    readResult = output
-                }
-            }
-        }
-
-        var output = ambientOutput ?? UsageCommandOutput()
-        switch readResult {
-        case let .success(list):
+        do {
+            let list = try await accountListReader(executablePath)
             let accounts = ClaudeSwapAccountProjection.accountSnapshots(from: list, now: renderOptions.now)
-            guard accounts.count > 1 else { return output }
-            output = UsageCommandOutput()
+            guard accounts.count > 1 else { return await ambientFetch() }
+
+            var output = UsageCommandOutput()
             output.cards = accounts.map { account in
                 CLICardsRenderer.makeClaudeSwapCard(
                     account: account,
                     renderOptions: renderOptions)
             }
             return output
-        case let .failure(message):
+        } catch {
+            var output = await ambientFetch()
+            let diagnostic = CLIClaudeSwapText.sanitizeDiagnostic(error.localizedDescription)
+            let message = diagnostic.isEmpty ? "claude-swap list failed." : diagnostic
             output.cardFailures.append(CLICardFailure(
                 provider: .claude,
                 accountLabel: ClaudeSwapAccountProjection.sourceLabel,
                 message: message))
             output.exitCode = .failure
-            return output
-        case nil:
             return output
         }
     }

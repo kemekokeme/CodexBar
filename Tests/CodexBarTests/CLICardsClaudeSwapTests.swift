@@ -128,24 +128,30 @@ struct CLICardsClaudeSwapTests {
 
     @Test
     func `zero and one account lists retain ambient output`() async {
+        let ambientCounter = InvocationCounter()
         let ambient = self.ambientOutput()
         for accounts in [[], [self.row(number: 1)]] {
             let output = await CLIClaudeSwapCards.fetch(
                 eligible: true,
                 executablePath: "/fake/cswap",
                 renderOptions: self.renderOptions(),
-                ambientFetch: { ambient },
+                ambientFetch: {
+                    await ambientCounter.increment()
+                    return ambient
+                },
                 accountListReader: { _ in
                     ClaudeSwapAccountList(activeAccountNumber: nil, accounts: accounts)
                 })
             #expect(output.cards == ambient.cards)
             #expect(output.cardFailures.isEmpty)
         }
+        #expect(await ambientCounter.value == 2)
     }
 
     @Test
-    func `multi account list atomically replaces ambient output in active slot order`() async {
-        let counter = InvocationCounter()
+    func `multi account list skips ambient output and renders in active slot order`() async {
+        let adapterCounter = InvocationCounter()
+        let ambientCounter = InvocationCounter()
         let ambient = self.ambientOutput(failed: true)
         let list = ClaudeSwapAccountList(activeAccountNumber: 2, accounts: [
             self.row(number: 3),
@@ -162,13 +168,17 @@ struct CLICardsClaudeSwapTests {
             eligible: true,
             executablePath: "/fake/cswap",
             renderOptions: self.renderOptions(status: status),
-            ambientFetch: { ambient },
+            ambientFetch: {
+                await ambientCounter.increment()
+                return ambient
+            },
             accountListReader: { _ in
-                await counter.increment()
+                await adapterCounter.increment()
                 return list
             })
 
-        #expect(await counter.value == 1)
+        #expect(await adapterCounter.value == 1)
+        #expect(await ambientCounter.value == 0)
         #expect(output.cards.map(\.accountLine) == [
             "account-2@example.com",
             "account-1@example.com",
