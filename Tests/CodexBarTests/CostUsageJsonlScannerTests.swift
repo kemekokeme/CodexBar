@@ -532,6 +532,30 @@ struct CostUsageJsonlScannerTests {
         #expect(endOffset == Int64(Data(record.utf8).count))
     }
 
+    @Test
+    func `jsonl scanner commits complete EOF record larger than retained prefix`() throws {
+        let root = try self.makeTemporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fileURL = root.appendingPathComponent("short-prefix.jsonl", isDirectory: false)
+        let record = #"{"message":"\#(String(repeating: "x", count: 128))"}"#
+        try record.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        var scanned: [CostUsageJsonl.Line] = []
+        let endOffset = try CostUsageJsonl.scan(
+            fileURL: fileURL,
+            maxLineBytes: 1024,
+            prefixBytes: 64)
+        { line in
+            scanned.append(line)
+        }
+
+        #expect(scanned.count == 1)
+        #expect(scanned[0].wasTruncated)
+        #expect(scanned[0].bytes.count == 64)
+        #expect(endOffset == Int64(Data(record.utf8).count))
+    }
+
     private func makeTemporaryRoot() throws -> URL {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(
             "codexbar-cost-usage-jsonl-\(UUID().uuidString)",
