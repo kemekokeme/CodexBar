@@ -5,7 +5,7 @@ extension StatusItemController {
     func runCursorLoginFlow() async -> Bool {
         let currentIdentity = self.store.snapshot(for: .cursor)?.identity(for: .cursor)
         let priorAccount = currentIdentity.map {
-            CursorLoginRunner.AccountIdentity(email: $0.accountEmail)
+            CursorLoginRunner.AccountIdentity(accountID: $0.accountID, email: $0.accountEmail)
         }
 
         // Stop older refreshes from publishing while the interactive login replaces the session.

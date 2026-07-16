@@ -704,7 +704,8 @@ public struct CursorStatusSnapshot: Sendable {
             providerID: .cursor,
             accountEmail: self.accountEmail,
             accountOrganization: nil,
-            loginMethod: self.membershipType.map { Self.formatMembershipType($0) })
+            loginMethod: self.membershipType.map { Self.formatMembershipType($0) },
+            accountID: self.accountID)
         return UsageSnapshot(
             primary: primary,
             secondary: secondary,
@@ -1146,19 +1147,31 @@ public struct CursorStatusProbe: Sendable {
         var firstRecoverableError: CursorStatusProbeError?
 
         for importedSession in importedSessions {
-            try Self.checkBrowserLoginDeadline(deadline)
+            do {
+                try Self.checkBrowserLoginDeadline(deadline)
+            } catch {
+                guard results.isEmpty else { return results }
+                throw error
+            }
             let session = BrowserLoginSession(
                 cookieHeader: importedSession.cookieHeader,
                 sourceLabel: importedSession.sourceLabel)
             guard seenCookieHeaders.insert(session.cookieHeader).inserted else { continue }
 
-            switch await self.fetchIfSessionAccepted(
+            let outcome = await self.fetchIfSessionAccepted(
                 importedSession,
                 log: { _ in },
                 fetchSnapshot: fetchSnapshot,
                 // Candidate discovery must not decide which credential owns the cache.
                 cacheAcceptedSession: { _ in })
-            {
+            do {
+                try Self.checkBrowserLoginDeadline(deadline)
+            } catch {
+                guard results.isEmpty else { return results }
+                throw error
+            }
+
+            switch outcome {
             case let .succeeded(snapshot):
                 guard Self.hasAccountIdentity(snapshot) else {
                     firstRecoverableError = firstRecoverableError ?? .parseFailed(
@@ -1171,7 +1184,6 @@ public struct CursorStatusProbe: Sendable {
             case let .failed(error):
                 firstRecoverableError = firstRecoverableError ?? error
             }
-            try Self.checkBrowserLoginDeadline(deadline)
         }
 
         if !results.isEmpty {

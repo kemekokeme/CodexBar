@@ -146,6 +146,67 @@ struct CursorLoginRunnerTests {
     }
 
     @Test
+    func `switch account accepts the same email when stable account ID changes`() async {
+        let committedHeaders = LockedArray<String>()
+        var presentedChoices: [CursorLoginAccountSelector.Choice] = []
+        let runner = CursorLoginRunner(
+            browserDetection: BrowserDetection(cacheTTL: 0),
+            priorAccount: .init(accountID: " account-a ", email: " SAME@example.com "),
+            timeout: 1,
+            pollInterval: 0.001,
+            launchRoute: { _ in true },
+            loadBrowserLoginCandidates: { _, _ in [
+                Self.browserCandidate(
+                    id: "account-a",
+                    email: "same@example.com",
+                    token: "current-token",
+                    source: "Work"),
+                Self.browserCandidate(
+                    id: "account-b",
+                    email: "same@example.com",
+                    token: "different-token",
+                    source: "Personal"),
+            ] },
+            sleeper: { _ in },
+            browserApplicationResolver: { _ in Self.cometApplicationURL },
+            routeResolver: Self.fixtureRouteResolver,
+            accountChooser: { choices in
+                presentedChoices = choices
+                return choices.first?.selectionID
+            },
+            replaceSessionCache: { session in
+                committedHeaders.append(session.cookieHeader)
+                return true
+            })
+
+        let result = await runner.run { _ in }
+
+        guard case .success = result.outcome else {
+            Issue.record("Expected a successful switch")
+            return
+        }
+        #expect(presentedChoices.map(\.displayLabel) == ["same@example.com · Personal"])
+        #expect(committedHeaders.snapshot() == ["WorkosCursorSessionToken=different-token"])
+    }
+
+    @Test
+    func `switch account falls back to normalized email when stable IDs are absent`() async {
+        let sequence = SnapshotSequence([
+            Self.snapshot(id: nil, email: " CURRENT@example.com "),
+            Self.snapshot(id: nil, email: "different@example.com"),
+        ])
+        let runner = Self.runner(
+            priorAccount: .init(accountID: nil, email: "current@example.com"),
+            accountChooser: { choices in choices.first?.selectionID },
+            loadSnapshot: { sequence.next() })
+
+        let result = await runner.run { _ in }
+
+        #expect(sequence.count() == 2)
+        #expect(result.email == "different@example.com")
+    }
+
+    @Test
     func `switch account cancellation with a sole candidate commits no session`() async {
         let committedHeaders = LockedArray<String>()
         var presentedChoices: [CursorLoginAccountSelector.Choice] = []

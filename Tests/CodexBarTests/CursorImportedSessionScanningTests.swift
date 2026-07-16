@@ -109,6 +109,33 @@ struct CursorImportedSessionScanningTests {
     }
 
     @Test
+    func `browser login candidates return earlier result when later profile reaches deadline`() async throws {
+        let probe = CursorStatusProbe(browserDetection: BrowserDetection(cacheTTL: 0))
+        let valid = Self.makeSessionInfo(sourceLabel: "Comet Default", token: "valid")
+        let slow = Self.makeSessionInfo(sourceLabel: "Comet Profile 1", token: "slow")
+        let validatedHeaders = LockedArray<String>()
+
+        let results = try await probe.fetchBrowserLoginCandidates(
+            browser: .comet,
+            importSessions: { _ in [valid, slow] },
+            importDomainSessions: { _ in [] },
+            fetchSnapshot: { cookieHeader in
+                validatedHeaders.append(cookieHeader)
+                if cookieHeader == slow.cookieHeader {
+                    try await Task.sleep(nanoseconds: 200_000_000)
+                    return Self.makeBrowserLoginSnapshot(accountID: "slow-id", email: "slow@example.com")
+                }
+                return Self.makeBrowserLoginSnapshot(
+                    accountID: "valid-id",
+                    email: "valid@example.com")
+            },
+            deadline: Date().addingTimeInterval(0.1))
+
+        #expect(results.map(\.snapshot.accountID) == ["valid-id"])
+        #expect(validatedHeaders.snapshot() == [valid.cookieHeader, slow.cookieHeader])
+    }
+
+    @Test
     func `browser login candidates skip identity-less success when another profile is valid`() async throws {
         let probe = CursorStatusProbe(browserDetection: BrowserDetection(cacheTTL: 0))
         let incomplete = Self.makeSessionInfo(sourceLabel: "Comet Default", token: "incomplete")

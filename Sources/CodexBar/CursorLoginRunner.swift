@@ -24,10 +24,17 @@ private func normalizedCursorAccountEmail(_ value: String?) -> String? {
 @MainActor
 final class CursorLoginRunner {
     struct AccountIdentity: Equatable, Sendable {
+        let accountID: String?
         let email: String?
 
+        init(accountID: String? = nil, email: String?) {
+            self.accountID = accountID
+            self.email = email
+        }
+
         fileprivate var hasIdentity: Bool {
-            normalizedCursorAccountEmail(self.email) != nil
+            normalizedCursorAccountID(self.accountID) != nil ||
+                normalizedCursorAccountEmail(self.email) != nil
         }
     }
 
@@ -413,6 +420,12 @@ final class CursorLoginRunner {
         guard let priorAccount else {
             return normalizedCursorAccountID(snapshot.accountID) != nil ||
                 normalizedCursorAccountEmail(snapshot.accountEmail) != nil
+        }
+
+        if let priorAccountID = normalizedCursorAccountID(priorAccount.accountID),
+           let candidateAccountID = normalizedCursorAccountID(snapshot.accountID)
+        {
+            return candidateAccountID != priorAccountID
         }
 
         guard let priorEmail = normalizedCursorAccountEmail(priorAccount.email),

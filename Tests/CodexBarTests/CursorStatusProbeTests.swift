@@ -324,7 +324,7 @@ struct CursorStatusProbeTests {
     }
 
     @Test
-    func `converts snapshot to usage snapshot`() {
+    func `converts snapshot to usage snapshot`() throws {
         let snapshot = CursorStatusSnapshot(
             planPercentUsed: 45.0,
             autoPercentUsed: 5.0,
@@ -347,6 +347,7 @@ struct CursorStatusProbeTests {
 
         #expect(usageSnapshot.primary?.usedPercent == 45.0)
         #expect(usageSnapshot.accountEmail(for: .cursor) == "user@example.com")
+        #expect(usageSnapshot.identity(for: .cursor)?.accountID == "auth0|12345")
         #expect(usageSnapshot.loginMethod(for: .cursor) == "Cursor Pro")
         #expect(usageSnapshot.secondary != nil)
         #expect(usageSnapshot.secondary?.usedPercent == 5.0)
@@ -355,6 +356,11 @@ struct CursorStatusProbeTests {
         #expect(usageSnapshot.providerCost?.used == 5.0)
         #expect(usageSnapshot.providerCost?.limit == 100.0)
         #expect(usageSnapshot.providerCost?.currencyCode == "USD")
+
+        let roundTripped = try JSONDecoder().decode(
+            UsageSnapshot.self,
+            from: JSONEncoder().encode(usageSnapshot))
+        #expect(roundTripped.identity(for: .cursor)?.accountID == "auth0|12345")
     }
 
     @Test
