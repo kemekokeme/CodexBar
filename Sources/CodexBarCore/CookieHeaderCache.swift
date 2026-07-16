@@ -104,6 +104,7 @@ public enum CookieHeaderCache {
     private nonisolated(unsafe) static var displayGenerations: [KeychainCacheStore.Key: UInt64] = [:]
     private nonisolated(unsafe) static var displayRevalidationsInFlight: Set<KeychainCacheStore.Key> = []
     private nonisolated(unsafe) static var legacyMigrationsInFlight: Set<UsageProvider> = []
+    private static let displayIntervalOverrideLock = NSLock()
     private nonisolated(unsafe) static var displayStalenessIntervalOverride: TimeInterval?
     private nonisolated(unsafe) static var displayUnavailableRetryIntervalOverride: TimeInterval?
     private static let displayStalenessInterval: TimeInterval = 30
@@ -278,19 +279,25 @@ public enum CookieHeaderCache {
     }
 
     private static var currentDisplayStalenessInterval: TimeInterval {
-        self.displayStalenessIntervalOverride ?? self.displayStalenessInterval
+        self.displayIntervalOverrideLock.withLock { self.displayStalenessIntervalOverride }
+            ?? self.displayStalenessInterval
     }
 
     private static var currentDisplayUnavailableRetryInterval: TimeInterval {
-        self.displayUnavailableRetryIntervalOverride ?? self.displayUnavailableRetryInterval
+        self.displayIntervalOverrideLock.withLock { self.displayUnavailableRetryIntervalOverride }
+            ?? self.displayUnavailableRetryInterval
     }
 
     static func setDisplayStalenessIntervalOverrideForTesting(_ interval: TimeInterval?) {
-        self.displayStalenessIntervalOverride = interval
+        self.displayIntervalOverrideLock.withLock { self.displayStalenessIntervalOverride = interval }
     }
 
     static func setDisplayUnavailableRetryIntervalOverrideForTesting(_ interval: TimeInterval?) {
-        self.displayUnavailableRetryIntervalOverride = interval
+        self.displayIntervalOverrideLock.withLock { self.displayUnavailableRetryIntervalOverride = interval }
+    }
+
+    static func displayIntervalsForTesting() -> (staleness: TimeInterval, unavailableRetry: TimeInterval) {
+        (self.currentDisplayStalenessInterval, self.currentDisplayUnavailableRetryInterval)
     }
 
     static func resetDisplayCacheForTesting() {
