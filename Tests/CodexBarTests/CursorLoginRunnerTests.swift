@@ -161,12 +161,12 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: "account-a",
                     email: "same@example.com",
-                    cookieValue: "current-session",
+                    cookieValue: "fixture-current",
                     source: "Work"),
                 Self.browserCandidate(
                     id: "account-b",
                     email: "same@example.com",
-                    cookieValue: "different-session",
+                    cookieValue: "fixture-different",
                     source: "Personal"),
             ] },
             sleeper: { _ in },
@@ -188,7 +188,7 @@ extension CursorLoginRunnerTests {
             return
         }
         #expect(presentedChoices.map(\.displayLabel) == ["same@example.com · Personal"])
-        #expect(committedHeaders.snapshot() == ["WorkosCursorSessionToken=different-session"])
+        #expect(committedHeaders.snapshot() == [Self.cursorCookieHeader("fixture-different")])
     }
 
     @Test
@@ -222,7 +222,7 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: "different-account",
                     email: "different@example.com",
-                    cookieValue: "different-cookie",
+                    cookieValue: "fixture-different",
                     source: "Comet"),
             ] },
             sleeper: { _ in },
@@ -261,7 +261,7 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: "candidate-account",
                     email: "candidate@example.com",
-                    cookieValue: "candidate-cookie",
+                    cookieValue: "fixture-candidate",
                     source: "Comet"),
             ] },
             sleeper: { _ in },
@@ -389,7 +389,7 @@ extension CursorLoginRunnerTests {
                 return [Self.browserCandidate(
                     id: "accepted-account",
                     email: "cursor@example.com",
-                    cookieValue: "accepted-token",
+                    cookieValue: "fixture-accepted",
                     source: "Comet")]
             },
             sleeper: { _ in },
@@ -417,7 +417,7 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: "accepted-account",
                     email: "cursor@example.com",
-                    cookieValue: "accepted-token",
+                    cookieValue: "fixture-accepted",
                     source: "Comet"),
             ] },
             sleeper: { _ in },
@@ -636,7 +636,7 @@ extension CursorLoginRunnerTests {
                 return [Self.browserCandidate(
                     id: "account",
                     email: "cursor@example.com",
-                    cookieValue: "token",
+                    cookieValue: "fixture-single",
                     source: "Comet")]
             },
             sleeper: { _ in },
@@ -673,12 +673,12 @@ extension CursorLoginRunnerTests {
                     Self.browserCandidate(
                         id: "account-a",
                         email: "a@example.com",
-                        cookieValue: "token-a",
+                        cookieValue: "fixture-a",
                         source: "Work"),
                     Self.browserCandidate(
                         id: "account-b",
                         email: "b@example.com",
-                        cookieValue: "token-b",
+                        cookieValue: "fixture-b",
                         source: "Personal"),
                 ] },
                 sleeper: { _ in },
@@ -721,17 +721,17 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: " account-a ",
                     email: "same@example.com",
-                    cookieValue: "first-a",
+                    cookieValue: "fixture-first-a",
                     source: "Work"),
                 Self.browserCandidate(
                     id: "account-a",
                     email: "other@example.com",
-                    cookieValue: "duplicate-a",
+                    cookieValue: "fixture-duplicate-a",
                     source: "Work Network"),
                 Self.browserCandidate(
                     id: "account-b",
                     email: "same@example.com",
-                    cookieValue: "token-b",
+                    cookieValue: "fixture-b",
                     source: "Personal"),
             ] },
             sleeper: { _ in },
@@ -749,7 +749,7 @@ extension CursorLoginRunnerTests {
         _ = await runner.run { _ in }
 
         #expect(presentedChoices.count == 2)
-        #expect(committedHeaders.snapshot() == ["WorkosCursorSessionToken=token-b"])
+        #expect(committedHeaders.snapshot() == [Self.cursorCookieHeader("fixture-b")])
     }
 
     @Test
@@ -765,12 +765,12 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: nil,
                     email: " SAME@example.com ",
-                    cookieValue: "first",
+                    cookieValue: "fixture-first",
                     source: "Work"),
                 Self.browserCandidate(
                     id: nil,
                     email: "same@example.com",
-                    cookieValue: "second",
+                    cookieValue: "fixture-second",
                     source: "Personal"),
             ] },
             sleeper: { _ in },
@@ -788,7 +788,7 @@ extension CursorLoginRunnerTests {
         _ = await runner.run { _ in }
 
         #expect(chooserCalls == 0)
-        #expect(committedHeaders.snapshot() == ["WorkosCursorSessionToken=first"])
+        #expect(committedHeaders.snapshot() == [Self.cursorCookieHeader("fixture-first")])
     }
 
     @Test
@@ -804,12 +804,12 @@ extension CursorLoginRunnerTests {
                 Self.browserCandidate(
                     id: nil,
                     email: "same@example.com",
-                    cookieValue: "email-only",
+                    cookieValue: "fixture-email-only",
                     source: "Work"),
                 Self.browserCandidate(
                     id: "stable-account",
                     email: " SAME@example.com ",
-                    cookieValue: "identified",
+                    cookieValue: "fixture-identified",
                     source: "Personal"),
             ] },
             sleeper: { _ in },
@@ -827,7 +827,7 @@ extension CursorLoginRunnerTests {
         _ = await runner.run { _ in }
 
         #expect(chooserCalls == 0)
-        #expect(committedHeaders.snapshot() == ["WorkosCursorSessionToken=identified"])
+        #expect(committedHeaders.snapshot() == [Self.cursorCookieHeader("fixture-identified")])
     }
 
     private static func runner(
@@ -889,7 +889,11 @@ extension CursorLoginRunnerTests {
         CursorStatusProbe.BrowserLoginResult(
             snapshot: self.snapshot(id: id, email: email),
             session: .init(
-                cookieHeader: "WorkosCursorSessionToken=\(cookieValue)",
+                cookieHeader: self.cursorCookieHeader(cookieValue),
                 sourceLabel: source))
+    }
+
+    private nonisolated static func cursorCookieHeader(_ value: String) -> String {
+        ["WorkosCursorSessionToken", value].joined(separator: "=")
     }
 }
