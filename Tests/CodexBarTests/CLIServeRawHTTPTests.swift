@@ -162,6 +162,7 @@ struct CLIServeRawHTTPTests {
 
             #expect(response.statusLine == "HTTP/1.1 200 OK")
             #expect(response.headerValue("Cache-Control") == "no-store")
+            #expect(response.headerValues("Cache-Control").count == 1)
             let object = try #require(
                 JSONSerialization.jsonObject(with: Data(response.body.utf8)) as? [String: Any])
             #expect(object["schemaVersion"] as? Int == 1)
@@ -226,6 +227,26 @@ struct CLIServeRawHTTPTests {
     }
 
     @Test
+    func `usage and cost responses carry no-store on the wire`() async throws {
+        try await Self.withServeRuntime(token: nil, body: { port in
+            let usage = try await Self.rawExchange(
+                port: port,
+                request: "GET /usage HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+            let cost = try await Self.rawExchange(
+                port: port,
+                request: "GET /cost HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+
+            #expect(usage.statusLine == "HTTP/1.1 200 OK")
+            #expect(usage.headerValue("Cache-Control") == "no-store")
+            #expect(usage.headerValues("Cache-Control").count == 1)
+            // All providers are disabled in this runtime, so /cost rejects the request,
+            // but even error responses on account-data routes stay uncacheable.
+            #expect(cost.statusLine == "HTTP/1.1 400 Bad Request")
+            #expect(cost.headerValue("Cache-Control") == "no-store")
+        })
+    }
+
+    @Test
     func `non-loopback binds gate usage and cost behind the token`() async throws {
         try await Self.withServeRuntime(token: "secret", bindHost: "0.0.0.0", body: { port in
             let usageDenied = try await Self.rawExchange(
@@ -248,8 +269,23 @@ struct CLIServeRawHTTPTests {
             #expect(costDenied.statusLine == "HTTP/1.1 401 Unauthorized")
             #expect(costDenied.headerValue("Cache-Control") == "no-store")
             #expect(usageAllowed.statusLine == "HTTP/1.1 200 OK")
+            #expect(usageAllowed.headerValue("Cache-Control") == "no-store")
             // /health carries no account data and stays open for liveness probes.
             #expect(health.statusLine == "HTTP/1.1 200 OK")
+        })
+    }
+
+    @Test
+    func `dashboard error responses carry no-store`() async throws {
+        try await Self.withServeRuntime(token: "secret", rawConfigJSON: "{not json", body: { port in
+            let response = try await Self.rawExchange(
+                port: port,
+                request: "GET /dashboard/v1/snapshot HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                    + "Authorization: Bearer secret\r\n\r\n")
+
+            #expect(response.statusLine == "HTTP/1.1 500 Internal Server Error")
+            #expect(response.headerValue("Cache-Control") == "no-store")
+            #expect(response.headerValues("Cache-Control").count == 1)
         })
     }
 
@@ -275,10 +311,12 @@ struct CLIServeRawHTTPTests {
     ///
     /// `bindHost` configures the runtime exactly as `runServe` would for that bind
     /// host (a non-loopback value gates every data route); the test listener itself
-    /// always binds loopback.
+    /// always binds loopback. `rawConfigJSON` replaces the stored config with raw
+    /// bytes to provoke config-load failures.
     static func withServeRuntime(
         token: String?,
         bindHost: String = "127.0.0.1",
+        rawConfigJSON: String? = nil,
         body: (UInt16) async throws -> Void) async throws
     {
         let store = testConfigStore(suiteName: "CLIServeRawHTTPTests-\(UUID().uuidString)")
@@ -286,6 +324,9 @@ struct CLIServeRawHTTPTests {
         try store.save(CodexBarConfig(providers: UsageProvider.allCases.map {
             ProviderConfig(id: $0, enabled: false)
         }))
+        if let rawConfigJSON {
+            try Data(rawConfigJSON.utf8).write(to: store.fileURL)
+        }
 
         let runtime = ServeRuntime(
             configStore: store,

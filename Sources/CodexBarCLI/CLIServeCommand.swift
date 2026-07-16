@@ -831,9 +831,9 @@ extension CodexBarCLI {
                 operationKey = try Self.serveOperationKey(kind: "usage", provider: provider)
             } catch {
                 let status: CLIHTTPStatus = error is CLIServeArgumentError ? .badRequest : .internalServerError
-                return Self.serveError(status: status, message: error.localizedDescription)
+                return Self.addingNoStore(Self.serveError(status: status, message: error.localizedDescription))
             }
-            return await Self.cachedServeResponse(
+            return await Self.addingNoStore(Self.cachedServeResponse(
                 request: ServeResponseRequest(
                     key: operationKey,
                     configFingerprint: snapshot.cacheToken,
@@ -850,7 +850,7 @@ extension CodexBarCLI {
                             providerTimeout: providerTimeout,
                             providerDeadline: providerDeadline,
                             providerOperations: runtime.providerOperations))
-                })
+                }))
         case let .cost(provider):
             guard !runtime.dataRoutesRequireAuth || runtime.dashboardAuth.authorize(request) else {
                 return Self.serveUnauthorizedResponse()
@@ -862,9 +862,9 @@ extension CodexBarCLI {
                 operationKey = try Self.serveOperationKey(kind: "cost", provider: provider)
             } catch {
                 let status: CLIHTTPStatus = error is CLIServeArgumentError ? .badRequest : .internalServerError
-                return Self.serveError(status: status, message: error.localizedDescription)
+                return Self.addingNoStore(Self.serveError(status: status, message: error.localizedDescription))
             }
-            return await Self.cachedServeResponse(
+            return await Self.addingNoStore(Self.cachedServeResponse(
                 request: ServeResponseRequest(
                     key: operationKey,
                     configFingerprint: snapshot.cacheToken,
@@ -882,7 +882,7 @@ extension CodexBarCLI {
                                 requestDeadline: requestDeadline,
                                 now: { ContinuousClock().now },
                                 providerOperations: runtime.costOperations)))
-                })
+                }))
         case .dashboardSnapshot:
             // Auth comes first: an unauthenticated request must not warm, read, or
             // deduplicate against the response cache.
@@ -896,9 +896,9 @@ extension CodexBarCLI {
                 operationKey = try Self.serveOperationKey(kind: "dashboard", provider: nil)
             } catch {
                 let status: CLIHTTPStatus = error is CLIServeArgumentError ? .badRequest : .internalServerError
-                return Self.serveError(status: status, message: error.localizedDescription)
+                return Self.addingNoStore(Self.serveError(status: status, message: error.localizedDescription))
             }
-            return await Self.cachedServeResponse(
+            return await Self.addingNoStore(Self.cachedServeResponse(
                 request: ServeResponseRequest(
                     key: operationKey,
                     configFingerprint: snapshot.cacheToken,
@@ -924,7 +924,7 @@ extension CodexBarCLI {
                                 now: { ContinuousClock().now },
                                 providerOperations: runtime.costOperations),
                             codexBarVersion: runtime.healthVersion))
-                })
+                }))
         }
     }
 
@@ -1185,8 +1185,8 @@ extension CodexBarCLI {
             refreshInterval: context.usage.refreshInterval,
             codexBarVersion: context.codexBarVersion)
 
-        // Snapshots carry account data; keep them out of shared HTTP caches.
-        return Self.serveJSON(snapshot, extraHeaders: [("Cache-Control", "no-store")])
+        // Cache-Control: no-store is applied uniformly at the route level.
+        return Self.serveJSON(snapshot)
     }
 
     /// Per-provider fetch budget for `/usage` and `/cost`. Finite provider work
@@ -1372,6 +1372,22 @@ extension CodexBarCLI {
 
     static func serveHealthResponse(version: String?) -> CLILocalHTTPResponse {
         self.serveJSON(ServeHealthPayload(status: "ok", version: version))
+    }
+
+    /// The data routes (`/usage`, `/cost`, `/dashboard/v1/snapshot`) carry account
+    /// data; keep every response on them out of shared HTTP caches. Idempotent:
+    /// responses that already declare a Cache-Control policy (e.g. 401s) pass
+    /// through unchanged.
+    static func addingNoStore(_ response: CLILocalHTTPResponse) -> CLILocalHTTPResponse {
+        guard !response.extraHeaders.contains(where: { $0.0.lowercased() == "cache-control" }) else {
+            return response
+        }
+        return CLILocalHTTPResponse(
+            status: response.status,
+            body: response.body,
+            contentType: response.contentType,
+            extraHeaders: response.extraHeaders + [("Cache-Control", "no-store")],
+            usageCacheKeys: response.usageCacheKeys)
     }
 
     /// 401 for the dashboard routes: advertises the bearer scheme and keeps the

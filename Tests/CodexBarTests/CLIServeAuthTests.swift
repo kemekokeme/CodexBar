@@ -171,6 +171,22 @@ struct CLIServeAuthTests {
     }
 
     @Test
+    func `adding no-store preserves an existing cache-control header`() {
+        let plain = CLILocalHTTPResponse(status: .ok, body: Data("[]".utf8))
+        let declared = CLILocalHTTPResponse(
+            status: .ok,
+            body: Data("[]".utf8),
+            extraHeaders: [("Cache-Control", "no-store")])
+
+        let annotated = CodexBarCLI.addingNoStore(plain)
+        let untouched = CodexBarCLI.addingNoStore(declared)
+
+        #expect(annotated.extraHeaders.contains { $0 == ("Cache-Control", "no-store") })
+        #expect(untouched.extraHeaders.count == 1)
+        #expect(CodexBarCLI.addingNoStore(annotated).extraHeaders.count == 1)
+    }
+
+    @Test
     func `unauthorized response advertises bearer challenge and no-store`() {
         let response = CodexBarCLI.serveUnauthorizedResponse()
 
