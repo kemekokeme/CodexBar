@@ -14,7 +14,7 @@ enum ProviderTokenAccountSelection {
         override: TokenAccountOverride?) -> ProviderTokenAccount?
     {
         if let override, override.provider == provider { return override.account }
-        return settings.selectedTokenAccount(for: provider)
+        return settings.effectiveSelectedTokenAccount(for: provider)
     }
 
     @MainActor
