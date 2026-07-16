@@ -48,19 +48,26 @@ final class BoundedLineBuffer: @unchecked Sendable {
         self.lock.lock()
         defer { self.lock.unlock() }
 
-        guard chunk.count <= self.maxBytes - self.buffer.count else {
-            return AppendResult(lines: [], didExceedLimit: true)
+        var lines: [Data] = []
+        var segmentStart = chunk.startIndex
+        while let newline = chunk[segmentStart...].firstIndex(of: 0x0A) {
+            let segment = chunk[segmentStart..<newline]
+            guard segment.count <= self.maxBytes - self.buffer.count else {
+                return AppendResult(lines: [], didExceedLimit: true)
+            }
+            self.buffer.append(segment)
+            if !self.buffer.isEmpty {
+                lines.append(self.buffer)
+            }
+            self.buffer.removeAll(keepingCapacity: true)
+            segmentStart = chunk.index(after: newline)
         }
 
-        self.buffer.append(chunk)
-        var lines: [Data] = []
-        while let newline = self.buffer.firstIndex(of: 0x0A) {
-            let line = Data(self.buffer[..<newline])
-            self.buffer.removeSubrange(...newline)
-            if !line.isEmpty {
-                lines.append(line)
-            }
+        let tail = chunk[segmentStart...]
+        guard tail.count <= self.maxBytes - self.buffer.count else {
+            return AppendResult(lines: [], didExceedLimit: true)
         }
+        self.buffer.append(contentsOf: tail)
         return AppendResult(lines: lines, didExceedLimit: false)
     }
 }

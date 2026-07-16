@@ -39,4 +39,27 @@ struct BoundedOutputBufferTests {
         #expect(!first.didExceedLimit)
         #expect(!second.didExceedLimit)
     }
+
+    @Test
+    func `line buffer drains a completed line before limiting the same chunk tail`() {
+        let buffer = BoundedLineBuffer(maxBytes: 4)
+
+        let partial = buffer.appendAndDrainLines(Data("abc".utf8))
+        let completed = buffer.appendAndDrainLines(Data("d\nxy".utf8))
+
+        #expect(!partial.didExceedLimit)
+        #expect(completed.lines == [Data("abcd".utf8)])
+        #expect(!completed.didExceedLimit)
+    }
+
+    @Test
+    func `line buffer rejects an oversized line even when newline arrives`() {
+        let buffer = BoundedLineBuffer(maxBytes: 4)
+
+        _ = buffer.appendAndDrainLines(Data("abc".utf8))
+        let overflow = buffer.appendAndDrainLines(Data("de\n".utf8))
+
+        #expect(overflow.lines.isEmpty)
+        #expect(overflow.didExceedLimit)
+    }
 }
