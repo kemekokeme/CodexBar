@@ -537,6 +537,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "รูปแบบแถบเมนู";
 "menu_bar_style_subtitle" = "รูปแบบการแสดงรายการในแถบเมนู";
+"menu_bar_inactive_display_contrast_title" = "เพิ่มการมองเห็นบนจอแสดงผลที่ไม่ได้ใช้งาน";
+"menu_bar_inactive_display_contrast_subtitle" = "ใช้การแสดงผลแบบคอนทราสต์สูงเพื่อให้ไอคอนและค่าชี้วัดอ่านได้บนจออื่น";
 "menu_bar_style_critters" = "ตัวการ์ตูน";
 "menu_bar_style_bars" = "แถบวัด";
 "menu_bar_style_icon_percent" = "ไอคอนและเปอร์เซ็นต์";

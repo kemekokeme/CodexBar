@@ -529,6 +529,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "メニューバーのスタイル";
 "menu_bar_style_subtitle" = "メニューバー項目の表示方法です。";
+"menu_bar_inactive_display_contrast_title" = "非アクティブなディスプレイでの視認性を向上";
+"menu_bar_inactive_display_contrast_subtitle" = "高コントラスト表示を使用し、ほかのディスプレイでもアイコンと指標を読みやすくします。";
 "menu_bar_style_critters" = "クリッター";
 "menu_bar_style_bars" = "メーターバー";
 "menu_bar_style_icon_percent" = "アイコンとパーセント";
@@ -1181,3 +1183,16 @@
 "Show Codex Spark usage" = "Codex Spark の使用量を表示";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "メニューとプロバイダのプレビューに Codex Spark のクォータ行を表示します。表示設定で「クレジットと追加使用量を表示」を有効にする必要があります。";
 "Scroll to see more models" = "スクロールして他のモデルを表示";
+
+"%@: %@" = "%@: %@";
+"Alternatively, set a custom path in Settings." = "または、設定でカスタムパスを指定します。";
+"Choose a supported browser so CodexBar can read the matching account." = "CodexBar が対応するアカウントを読み取れるよう、サポート対象のブラウザを選択してください。";
+"Choose Cursor account" = "Cursor アカウントを選択";
+"Choose which Cursor account CodexBar should use." = "CodexBar で使用する Cursor アカウントを選択してください。";
+"Finish switching to a different Cursor account in your browser, then try again." = "ブラウザで別の Cursor アカウントへの切り替えを完了してから、もう一度試してください。";
+"Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar." = "AI Assistant を有効にした JetBrains IDE をインストールしてから、CodexBar を更新してください。";
+"Request quota: %@ / %@" = "リクエスト上限: %@ / %@";
+"Sign in with Claude Code..." = "Claude Code でサインイン...";
+"Timed out waiting for Cursor account switch. %@" = "Cursor アカウントの切り替え待機中にタイムアウトしました。%@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "Cursor アカウントの切り替え待機中にタイムアウトしました。%@ 最後のエラー: %@";
+"Use Account" = "アカウントを使用する";

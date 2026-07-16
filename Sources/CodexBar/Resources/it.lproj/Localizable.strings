@@ -539,6 +539,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Stile barra menu";
 "menu_bar_style_subtitle" = "Come viene rappresentato l'elemento della barra menu.";
+"menu_bar_inactive_display_contrast_title" = "Migliora la visibilità sugli schermi inattivi";
+"menu_bar_inactive_display_contrast_subtitle" = "Usa un rendering ad alto contrasto per mantenere leggibili icona e metrica sugli altri schermi.";
 "menu_bar_style_critters" = "Creature";
 "menu_bar_style_bars" = "Barre di livello";
 "menu_bar_style_icon_percent" = "Icona + percentuale";

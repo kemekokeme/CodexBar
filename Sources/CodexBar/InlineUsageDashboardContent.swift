@@ -252,7 +252,7 @@ extension UsageMenuCardView.Model {
     }
 
     static func usesProviderCostHistoryAsPrimaryDashboard(_ provider: UsageProvider) -> Bool {
-        provider == .openai || provider == .mistral
+        provider == .openai || provider == .mistral || provider == .groq
     }
 
     static func primaryCostHistorySnapshot(input: Input) -> CostUsageTokenSnapshot? {
@@ -264,6 +264,11 @@ extension UsageMenuCardView.Model {
             return input.snapshot == nil ? input.tokenSnapshot : nil
         case .mistral:
             if let projected = input.snapshot?.mistralUsage?.toCostUsageTokenSnapshot() {
+                return projected
+            }
+            return input.snapshot == nil ? input.tokenSnapshot : nil
+        case .groq:
+            if let projected = input.snapshot?.groqConsoleUsage?.toCostUsageTokenSnapshot() {
                 return projected
             }
             return input.snapshot == nil ? input.tokenSnapshot : nil
@@ -378,13 +383,16 @@ extension UsageMenuCardView.Model {
         if let topModel = Self.topCostModel(from: snapshot.daily) {
             details.append("\(L("Top model")): \(Self.shortModelName(topModel))")
         }
-        if let requestCount = snapshot.last30DaysRequests {
-            details.append("\(requestHistoryTitle): \(UsageFormatter.tokenCountString(requestCount)) \(L("requests"))")
-        }
-        if let hint = Self.tokenUsageHint(provider: provider) {
-            details.append(hint)
-        } else {
-            details.append(L("cost_estimate_hint"))
+        if provider != .groq {
+            if let requestCount = snapshot.last30DaysRequests {
+                details
+                    .append("\(requestHistoryTitle): \(UsageFormatter.tokenCountString(requestCount)) \(L("requests"))")
+            }
+            if let hint = Self.tokenUsageHint(provider: provider) {
+                details.append(hint)
+            } else {
+                details.append(L("cost_estimate_hint"))
+            }
         }
         let providerName = ProviderDefaults.metadata[provider]?.displayName ?? provider.rawValue
         var model = InlineUsageDashboardModel(
