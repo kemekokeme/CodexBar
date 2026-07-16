@@ -481,7 +481,7 @@ public enum CookieHeaderCache {
         let entry = Entry(cookieHeader: normalized, storedAt: now, sourceLabel: sourceLabel)
         do {
             try self.withLegacyMutationLock {
-                _ = self.store(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
+                _ = self.storeLocked(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
             }
         } catch {
             self.log.error("Cookie cache store lock failed: \(error)")
@@ -505,7 +505,7 @@ public enum CookieHeaderCache {
         do {
             return try self.withLegacyMutationLock {
                 guard self.currentEntryMatches(expected, provider: provider, scope: scope) else { return false }
-                return self.store(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
+                return self.storeLocked(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
             }
         } catch {
             self.log.error("Cookie cache conditional store lock failed: \(error)")
@@ -567,12 +567,15 @@ public enum CookieHeaderCache {
     }
 
     @discardableResult
-    private static func store(
+    private static func storeLocked(
         entry: Entry,
         provider: UsageProvider,
         scope: Scope?,
         sourceLabel: String) -> Bool
     {
+        guard entry.authenticationFailurePolicy == .stopFallback
+            || !self.hasPinnedEntry(provider: provider, scope: scope)
+        else { return false }
         let key = self.key(for: provider, scope: scope)
         guard KeychainCacheStore.storeResult(key: key, entry: entry) else { return false }
         self.updateDisplaySnapshot(key: key, entry: entry)
@@ -972,7 +975,7 @@ extension CookieHeaderCache {
             authenticationFailurePolicy: authenticationFailurePolicy)
         do {
             return try self.withLegacyMutationLock {
-                self.store(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
+                self.storeLocked(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
             }
         } catch {
             self.log.error("Cookie cache observable store lock failed: \(error)")
@@ -1067,7 +1070,7 @@ extension CookieHeaderCache {
             do {
                 return try self.withLegacyMutationLock {
                     guard self.currentStateMatches(expected, provider: provider, scope: scope) else { return false }
-                    return self.store(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
+                    return self.storeLocked(entry: entry, provider: provider, scope: scope, sourceLabel: sourceLabel)
                 }
             } catch {
                 self.log.error("Cookie cache observed store lock failed: \(error)")
@@ -1097,6 +1100,21 @@ extension CookieHeaderCache {
         case (nil, nil): true
         case let (current?, expected?): self.entriesMatch(current, expected)
         default: false
+        }
+    }
+
+    private static func hasPinnedEntry(provider: UsageProvider, scope: Scope?) -> Bool {
+        let key = self.key(for: provider, scope: scope)
+        switch KeychainCacheStore.load(key: key, as: Entry.self) {
+        case let .found(current):
+            return current.authenticationFailurePolicy == .stopFallback
+        case .temporarilyUnavailable:
+            return true
+        case .missing:
+            return scope == nil
+                && self.loadLegacyEntry(for: provider)?.authenticationFailurePolicy == .stopFallback
+        case .invalid:
+            return false
         }
     }
 }

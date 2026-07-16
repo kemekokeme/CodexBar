@@ -1296,6 +1296,47 @@ extension CursorStatusProbeTests {
         #expect(CookieHeaderCache.load(provider: .cursor)?.cookieHeader == replacementSession.cookieHeader)
         #expect(CookieHeaderCache.load(provider: .cursor)?.authenticationFailurePolicy == .stopFallback)
     }
+
+    @Test
+    func `rejected selected session ignores an unselected cache replacement`() async throws {
+        let selectedSession = CursorStatusProbe.BrowserLoginSession(
+            cookieHeader: "selected=stale",
+            sourceLabel: "Selected browser")
+        #expect(CursorStatusProbe.commitBrowserLoginSession(selectedSession))
+        defer { CookieHeaderCache.clear(provider: .cursor) }
+
+        let testSession = CursorStatusProbeTestSession { request in
+            let requestURL = try #require(request.url)
+            let cookie = request.value(forHTTPHeaderField: "Cookie")
+            if cookie == selectedSession.cookieHeader {
+                #expect(!CookieHeaderCache.storeResult(
+                    provider: .cursor,
+                    cookieHeader: "background=replacement",
+                    sourceLabel: "Background refresh"))
+            } else {
+                Issue.record("Rejected selected session unexpectedly switched to \(cookie ?? "<none>")")
+            }
+            return makeCursorStatusProbeResponse(
+                url: requestURL,
+                body: #"{"error":"unauthorized"}"#,
+                statusCode: 401)
+        }
+
+        let baseURL = try #require(URL(string: "https://cursor-web.test"))
+        let probe = CursorStatusProbe(
+            baseURL: baseURL,
+            browserDetection: BrowserDetection(cacheTTL: 0),
+            browserCookieImportOrder: [],
+            urlSession: testSession.urlSession,
+            appAuthStore: CursorAppAuthSessionProviderStub(session: nil))
+
+        await #expect(throws: CursorStatusProbeError.self) {
+            _ = try await probe.fetch()
+        }
+        #expect(!testSession.requestCookies.contains("background=replacement"))
+        #expect(CookieHeaderCache.load(provider: .cursor)?.cookieHeader == selectedSession.cookieHeader)
+        #expect(CookieHeaderCache.load(provider: .cursor)?.authenticationFailurePolicy == .stopFallback)
+    }
 }
 
 private func makeCursorAppAuthToken(

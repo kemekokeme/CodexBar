@@ -1147,6 +1147,12 @@ public struct CursorStatusProbe: Sendable {
         } catch let error as CursorStatusProbeError {
             guard case .notLoggedIn = error else { throw error }
             if let replacement = CookieHeaderCache.load(provider: .cursor), replacement != cached {
+                if cached.authenticationFailurePolicy == .stopFallback,
+                   replacement.authenticationFailurePolicy != .stopFallback
+                {
+                    log("Selected cached session was rejected; ignoring an unselected cache replacement")
+                    throw error
+                }
                 log("Cached session changed while its request was in flight; retrying replacement")
                 return try await .succeeded(self.fetch(
                     cookieHeaderOverride: cookieHeaderOverride,
