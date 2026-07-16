@@ -539,6 +539,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Styl paska menu";
 "menu_bar_style_subtitle" = "Sposób rysowania elementu paska menu.";
+"menu_bar_inactive_display_contrast_title" = "Popraw widoczność na nieaktywnych ekranach";
+"menu_bar_inactive_display_contrast_subtitle" = "Używa renderowania o wysokim kontraście, aby ikona i wskaźnik pozostały czytelne na innych ekranach.";
 "menu_bar_style_critters" = "Stworki";
 "menu_bar_style_bars" = "Paski miernika";
 "menu_bar_style_icon_percent" = "Ikona i procent";

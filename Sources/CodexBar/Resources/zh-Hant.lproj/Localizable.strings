@@ -531,6 +531,8 @@
 "primary_api_key_limit" = "主要（API 金鑰限制）";
 "menu_bar_style_title" = "選單列樣式";
 "menu_bar_style_subtitle" = "選單列項目的繪製方式。";
+"menu_bar_inactive_display_contrast_title" = "改善非使用中顯示器上的可見度";
+"menu_bar_inactive_display_contrast_subtitle" = "使用高對比顯示，讓其他顯示器上的圖示與指標保持清晰可讀。";
 "menu_bar_style_critters" = "小動物";
 "menu_bar_style_bars" = "進度條";
 "menu_bar_style_icon_percent" = "圖示和百分比";
@@ -1219,3 +1221,11 @@
 "Show Codex Spark usage" = "顯示 Codex Spark 使用量";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "在選單和提供者預覽中顯示 Codex Spark 配額列。需要在「顯示」設定中啟用「顯示額度 + 額外使用量」。";
 "Scroll to see more models" = "捲動查看更多模型";
+
+"Choose a supported browser so CodexBar can read the matching account." = "選擇一個支援的瀏覽器，讓 CodexBar 可以讀取對應帳號。";
+"Choose Cursor account" = "選擇 Cursor 帳號";
+"Choose which Cursor account CodexBar should use." = "選擇 CodexBar 應使用的 Cursor 帳號。";
+"Finish switching to a different Cursor account in your browser, then try again." = "在瀏覽器中完成切換到其他 Cursor 帳號，然後再試一次。";
+"Timed out waiting for Cursor account switch. %@" = "等待切換 Cursor 帳號逾時。%@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "等待切換 Cursor 帳號逾時。%@ 最近錯誤：%@";
+"Use Account" = "使用此帳號";

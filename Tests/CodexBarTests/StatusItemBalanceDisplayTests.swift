@@ -664,6 +664,22 @@ struct StatusItemBalanceDisplayTests {
     }
 
     @Test
+    func `high contrast button title embeds image and metric in attributed content`() throws {
+        let image = NSImage(size: NSSize(width: 18, height: 18))
+        image.isTemplate = true
+
+        let title = StatusItemController.highContrastButtonTitle(image: image, title: " 42%")
+
+        #expect(title.string == "\u{FFFC} 42%")
+        let attachment = try #require(title.attribute(.attachment, at: 0, effectiveRange: nil) as? NSTextAttachment)
+        #expect(attachment.image === image)
+        #expect(attachment.bounds.width == 18)
+        #expect(attachment.bounds.height == 18)
+        #expect(title.attribute(.font, at: 1, effectiveRange: nil) is NSFont)
+        #expect(title.attribute(.foregroundColor, at: 1, effectiveRange: nil) as? NSColor == .labelColor)
+    }
+
+    @Test
     func `debug bundle identity updates status item accessibility`() {
         #expect(StatusItemController.isDebugApp(bundleIdentifier: "com.steipete.codexbar.debug"))
         #expect(!StatusItemController.isDebugApp(bundleIdentifier: "com.steipete.codexbar"))

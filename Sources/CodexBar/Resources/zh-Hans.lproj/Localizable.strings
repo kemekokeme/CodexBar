@@ -510,6 +510,8 @@
 "primary_api_key_limit" = "主要（API 密钥限制）";
 "menu_bar_style_title" = "菜单栏样式";
 "menu_bar_style_subtitle" = "菜单栏项目的绘制方式。";
+"menu_bar_inactive_display_contrast_title" = "提高非活跃显示器上的可见性";
+"menu_bar_inactive_display_contrast_subtitle" = "使用高对比度绘制，让其他显示器上的图标和指标仍清晰可读。";
 "menu_bar_style_critters" = "小动物";
 "menu_bar_style_bars" = "进度条";
 "menu_bar_style_icon_percent" = "图标和百分比";
@@ -1160,3 +1162,15 @@
 "Show Codex Spark usage" = "显示 Codex Spark 用量";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "在菜单和提供商预览中显示 Codex Spark 配额行。需要在“显示”设置中启用“显示额度 + 额外用量”。";
 "Scroll to see more models" = "滚动查看更多模型";
+
+"%@: %@" = "%@：%@";
+"Alternatively, set a custom path in Settings." = "或者在“设置”中指定自定义路径。";
+"Choose a supported browser so CodexBar can read the matching account." = "选择一个受支持的浏览器，以便 CodexBar 读取对应账户。";
+"Choose Cursor account" = "选择 Cursor 账户";
+"Choose which Cursor account CodexBar should use." = "选择 CodexBar 应使用的 Cursor 账户。";
+"Finish switching to a different Cursor account in your browser, then try again." = "在浏览器中完成切换到其他 Cursor 账户，然后重试。";
+"Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar." = "安装并启用 JetBrains IDE 的 AI Assistant，然后刷新 CodexBar。";
+"Sign in with Claude Code..." = "使用 Claude Code 登录...";
+"Timed out waiting for Cursor account switch. %@" = "等待切换 Cursor 账户超时。%@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "等待切换 Cursor 账户超时。%@ 最近错误：%@";
+"Use Account" = "使用此账户";

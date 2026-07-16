@@ -537,6 +537,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "نمط شريط القوائم";
 "menu_bar_style_subtitle" = "كيفية رسم عنصر شريط القوائم.";
+"menu_bar_inactive_display_contrast_title" = "تحسين الوضوح على الشاشات غير النشطة";
+"menu_bar_inactive_display_contrast_subtitle" = "استخدم عرضًا عالي التباين لإبقاء الأيقونة والمقياس قابلين للقراءة على الشاشات الأخرى.";
 "menu_bar_style_critters" = "الكائنات الصغيرة";
 "menu_bar_style_bars" = "أشرطة القياس";
 "menu_bar_style_icon_percent" = "الأيقونة والنسبة المئوية";

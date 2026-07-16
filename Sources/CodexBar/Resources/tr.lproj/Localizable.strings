@@ -537,6 +537,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Menü çubuğu stili";
 "menu_bar_style_subtitle" = "Menü çubuğu öğesinin nasıl çizileceğini belirler.";
+"menu_bar_inactive_display_contrast_title" = "Etkin olmayan ekranlarda görünürlüğü artır";
+"menu_bar_inactive_display_contrast_subtitle" = "Simge ve ölçümün diğer ekranlarda okunabilir kalması için yüksek kontrastlı işleme kullanır.";
 "menu_bar_style_critters" = "Canavarlar";
 "menu_bar_style_bars" = "Ölçüm çubukları";
 "menu_bar_style_icon_percent" = "Simge ve yüzde";

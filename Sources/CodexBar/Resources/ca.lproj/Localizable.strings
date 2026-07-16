@@ -515,6 +515,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Estil de la barra de menús";
 "menu_bar_style_subtitle" = "Com es dibuixa l'element de la barra de menús.";
+"menu_bar_inactive_display_contrast_title" = "Millora la visibilitat a les pantalles inactives";
+"menu_bar_inactive_display_contrast_subtitle" = "Utilitza una representació d'alt contrast perquè la icona i la mètrica siguin llegibles a les altres pantalles.";
 "menu_bar_style_critters" = "Bestioles";
 "menu_bar_style_bars" = "Barres de mesura";
 "menu_bar_style_icon_percent" = "Icona i percentatge";
