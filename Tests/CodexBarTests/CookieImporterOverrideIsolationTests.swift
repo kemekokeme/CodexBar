@@ -49,5 +49,25 @@ struct CookieImporterOverrideIsolationTests {
 
         #expect(observedLabels == Set(expectedLabels))
     }
+
+    @Test
+    func `perplexity overrides bypass the shared import cache`() async throws {
+        PerplexityCookieImporter.invalidateImportSessionCache()
+        defer { PerplexityCookieImporter.invalidateImportSessionCache() }
+
+        let first = try await PerplexityCookieImporter.withImportSessionsOverrideForTesting { _, _ in
+            [PerplexityCookieImporter.SessionInfo(cookies: [], sourceLabel: "first")]
+        } operation: {
+            try PerplexityCookieImporter.importSessions().map(\.sourceLabel)
+        }
+        let second = try await PerplexityCookieImporter.withImportSessionsOverrideForTesting { _, _ in
+            [PerplexityCookieImporter.SessionInfo(cookies: [], sourceLabel: "second")]
+        } operation: {
+            try PerplexityCookieImporter.importSessions().map(\.sourceLabel)
+        }
+
+        #expect(first == ["first"])
+        #expect(second == ["second"])
+    }
 }
 #endif

@@ -14,17 +14,49 @@ public enum PerplexityCookieImporter {
     #if DEBUG
     final class ImportSessionOverrideStore: @unchecked Sendable {
         let importSession: (BrowserDetection, ((String) -> Void)?) throws -> SessionInfo
+        private let lock = NSLock()
+        private var cachedSessions: [SessionInfo]?
 
         init(importSession: @escaping (BrowserDetection, ((String) -> Void)?) throws -> SessionInfo) {
             self.importSession = importSession
+        }
+
+        func sessions(
+            browserDetection: BrowserDetection,
+            logger: ((String) -> Void)?) throws -> [SessionInfo]
+        {
+            try self.lock.withLock {
+                if let cachedSessions = self.cachedSessions {
+                    return cachedSessions
+                }
+                let sessions = try [self.importSession(browserDetection, logger)]
+                self.cachedSessions = sessions
+                return sessions
+            }
         }
     }
 
     final class ImportSessionsOverrideStore: @unchecked Sendable {
         let importSessions: (BrowserDetection, ((String) -> Void)?) throws -> [SessionInfo]
+        private let lock = NSLock()
+        private var cachedSessions: [SessionInfo]?
 
         init(importSessions: @escaping (BrowserDetection, ((String) -> Void)?) throws -> [SessionInfo]) {
             self.importSessions = importSessions
+        }
+
+        func sessions(
+            browserDetection: BrowserDetection,
+            logger: ((String) -> Void)?) throws -> [SessionInfo]
+        {
+            try self.lock.withLock {
+                if let cachedSessions = self.cachedSessions {
+                    return cachedSessions
+                }
+                let sessions = try self.importSessions(browserDetection, logger)
+                self.cachedSessions = sessions
+                return sessions
+            }
         }
     }
 
@@ -72,22 +104,17 @@ public enum PerplexityCookieImporter {
         browserDetection: BrowserDetection = BrowserDetection(),
         logger: ((String) -> Void)? = nil) throws -> [SessionInfo]
     {
+        #if DEBUG
+        if let overrideStore = self.taskImportSessionsOverrideStore {
+            return try overrideStore.sessions(browserDetection: browserDetection, logger: logger)
+        }
+        if let overrideStore = self.taskImportSessionOverrideStore {
+            return try overrideStore.sessions(browserDetection: browserDetection, logger: logger)
+        }
+        #endif
         if let cached = self.cachedImportSessions() {
             return cached
         }
-        #if DEBUG
-        if let override = self.taskImportSessionsOverrideStore?.importSessions {
-            let sessions = try override(browserDetection, logger)
-            self.storeImportSessions(sessions)
-            return sessions
-        }
-        if let override = self.taskImportSessionOverrideStore?.importSession {
-            let session = try override(browserDetection, logger)
-            let sessions = [session]
-            self.storeImportSessions(sessions)
-            return sessions
-        }
-        #endif
 
         var sessions: [SessionInfo] = []
         let candidates = self.cookieImportOrder.cookieImportCandidates(using: browserDetection)
