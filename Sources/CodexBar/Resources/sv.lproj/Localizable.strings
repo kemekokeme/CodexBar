@@ -729,6 +729,11 @@
 "refresh_15min" = "15 min";
 "refresh_30min" = "30 min";
 "refresh_adaptive" = "Adaptiv";
+"refresh_adaptive_agent_aware" = "Adaptiv (agentaktivitet)";
+"adaptive_activity_consent_title" = "Tillåta aktivitetsmedveten uppdatering?";
+"adaptive_activity_consent_message" = "Det agentmedvetna adaptiva läget kan granska listan över lokala processer som körs, inklusive kommandorader, för att identifiera Codex och Claude och sedan läsa kända sessionsmetadata var 30:e sekund medan du kodar. När Agent Sessions är avstängt använder CodexBar endast tiden för den senaste aktiviteten i minnet och kasserar sessionssökvägar och identiteter. Dessa data skickas ingenstans, och fjärridentifiering och SSH förblir avstängda. Om du avböjer återgår CodexBar till vanligt Adaptiv utan lokala aktivitetsskanningar.";
+"adaptive_activity_consent_allow" = "Tillåt lokal aktivitet";
+"adaptive_activity_consent_decline" = "Använd vanligt Adaptiv";
 
 /* Additional keys */
 "not_found" = "Hittades inte";

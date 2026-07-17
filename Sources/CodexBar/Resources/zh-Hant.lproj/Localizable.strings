@@ -715,6 +715,11 @@
 "refresh_15min" = "15 分鐘";
 "refresh_30min" = "30 分鐘";
 "refresh_adaptive" = "自適應";
+"refresh_adaptive_agent_aware" = "自適應（感知代理程式活動）";
+"adaptive_activity_consent_title" = "允許根據活動自適應重新整理？";
+"adaptive_activity_consent_message" = "感知代理程式活動的自適應模式可以檢查本機執行中的程序列表（包括命令列）來辨識 Codex 和 Claude，並在你編寫程式碼時每 30 秒讀取一次已知的工作階段中繼資料。關閉 Agent Sessions 時，CodexBar 僅在記憶體中使用最近一次活動時間，並捨棄工作階段路徑和身分資訊。此資料不會傳送到任何地方，遠端偵測和 SSH 保持關閉。如果拒絕，CodexBar 將返回不掃描本機活動的普通自適應模式。";
+"adaptive_activity_consent_allow" = "允許本機活動";
+"adaptive_activity_consent_decline" = "使用普通自適應模式";
 "not_found" = "找不到";
 "CodexBar can't show its menu bar icon" = "CodexBar 無法顯示選單列圖示";
 "Dismiss" = "關閉";

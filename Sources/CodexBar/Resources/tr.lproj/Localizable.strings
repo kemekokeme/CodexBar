@@ -732,6 +732,11 @@
 "refresh_15min" = "15 dak";
 "refresh_30min" = "30 dak";
 "refresh_adaptive" = "Uyarlanabilir";
+"refresh_adaptive_agent_aware" = "Uyarlanabilir (ajan etkinliğine duyarlı)";
+"adaptive_activity_consent_title" = "Etkinliğe duyarlı yenilemeye izin verilsin mi?";
+"adaptive_activity_consent_message" = "Ajan etkinliğine duyarlı Uyarlanabilir mod, Codex ve Claude'u tanımak için komut satırları dahil yerel çalışan işlemler listesini inceleyebilir, ardından siz kod yazarken bilinen oturum meta verilerini 30 saniyede bir okuyabilir. Agent Sessions kapalıyken CodexBar bellekte yalnızca en son etkinlik zamanını kullanır ve oturum yolları ile kimliklerini atar. Bu veriler hiçbir yere gönderilmez; uzaktan keşif ve SSH kapalı kalır. Reddederseniz CodexBar yerel etkinlik taraması olmadan normal Uyarlanabilir moda döner.";
+"adaptive_activity_consent_allow" = "Yerel Etkinliğe İzin Ver";
+"adaptive_activity_consent_decline" = "Normal Uyarlanabilir Modu Kullan";
 
 /* Additional keys */
 "not_found" = "Bulunamadı";

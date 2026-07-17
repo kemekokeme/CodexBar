@@ -738,6 +738,11 @@
 "refresh_15min" = "Co 15 min";
 "refresh_30min" = "Co 30 min";
 "refresh_adaptive" = "Adaptacyjny";
+"refresh_adaptive_agent_aware" = "Adaptacyjny (aktywność agentów)";
+"adaptive_activity_consent_title" = "Zezwolić na odświeżanie uwzględniające aktywność?";
+"adaptive_activity_consent_message" = "Tryb adaptacyjny uwzględniający aktywność agentów może sprawdzać listę uruchomionych procesów lokalnych, w tym wiersze poleceń, aby rozpoznać Codex i Claude, a następnie podczas programowania co 30 sekund odczytywać metadane znanych sesji. Gdy Agent Sessions jest wyłączone, CodexBar używa w pamięci tylko czasu ostatniej aktywności i odrzuca ścieżki oraz tożsamości sesji. Te dane nie są nigdzie wysyłane, a wykrywanie zdalne i SSH pozostają wyłączone. Jeśli odmówisz, CodexBar wróci do zwykłego trybu adaptacyjnego bez skanowania aktywności lokalnej.";
+"adaptive_activity_consent_allow" = "Zezwól na lokalną aktywność";
+"adaptive_activity_consent_decline" = "Używaj zwykłego Adaptacyjnego";
 
 /* Additional keys */
 "not_found" = "Nie znaleziono";

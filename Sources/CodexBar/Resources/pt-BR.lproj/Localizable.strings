@@ -727,6 +727,11 @@
 "refresh_15min" = "15 min";
 "refresh_30min" = "30 min";
 "refresh_adaptive" = "Adaptativo";
+"refresh_adaptive_agent_aware" = "Adaptativo (atividade de agentes)";
+"adaptive_activity_consent_title" = "Permitir atualização conforme a atividade?";
+"adaptive_activity_consent_message" = "O modo Adaptativo conforme a atividade de agentes pode inspecionar a lista de processos locais em execução, incluindo as linhas de comando, para identificar Codex e Claude e ler os metadados de sessões conhecidas a cada 30 segundos enquanto você programa. Com Agent Sessions desativado, o CodexBar mantém na memória apenas o horário da atividade mais recente e descarta os caminhos e as identidades das sessões. Esses dados não são enviados a lugar algum, e a detecção remota e o SSH permanecem desativados. Se você recusar, o CodexBar voltará ao modo Adaptativo comum sem verificações de atividade local.";
+"adaptive_activity_consent_allow" = "Permitir atividade local";
+"adaptive_activity_consent_decline" = "Usar Adaptativo comum";
 
 /* Additional keys */
 "not_found" = "Não encontrado";

@@ -714,6 +714,11 @@
 "refresh_15min" = "15 min";
 "refresh_30min" = "30 min";
 "refresh_adaptive" = "Adaptatiu";
+"refresh_adaptive_agent_aware" = "Adaptatiu (activitat dels agents)";
+"adaptive_activity_consent_title" = "Voleu permetre l’actualització segons l’activitat?";
+"adaptive_activity_consent_message" = "El mode Adaptatiu segons l’activitat dels agents pot inspeccionar la llista de processos locals en execució, incloses les línies d’ordres, per identificar Codex i Claude, i llegir les metadades de sessions conegudes cada 30 segons mentre programeu. Amb Agent Sessions desactivat, CodexBar només conserva a la memòria l’hora de l’activitat més recent i descarta les rutes i identitats de les sessions. Aquestes dades no s’envien enlloc, i la detecció remota i SSH continuen desactivats. Si ho rebutgeu, CodexBar tornarà al mode Adaptatiu normal sense exploracions d’activitat local.";
+"adaptive_activity_consent_allow" = "Permeteu l’activitat local";
+"adaptive_activity_consent_decline" = "Utilitzeu l’Adaptatiu normal";
 
 /* Additional keys */
 "not_found" = "No trobat";

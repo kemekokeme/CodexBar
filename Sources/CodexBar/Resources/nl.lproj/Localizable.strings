@@ -730,6 +730,11 @@
 "refresh_15min" = "15 minuten";
 "refresh_30min" = "30 min";
 "refresh_adaptive" = "Adaptief";
+"refresh_adaptive_agent_aware" = "Adaptief (agentactiviteit)";
+"adaptive_activity_consent_title" = "Activiteitsgestuurd vernieuwen toestaan?";
+"adaptive_activity_consent_message" = "De agentbewuste adaptieve modus kan de lijst met lokaal actieve processen, inclusief opdrachtregels, controleren om Codex en Claude te herkennen en vervolgens tijdens het programmeren elke 30 seconden bekende sessiemetadata lezen. Als Agent Sessions uitstaat, gebruikt CodexBar in het geheugen alleen het tijdstip van de meest recente activiteit en verwijdert het sessiepaden en identiteiten. Deze gegevens worden nergens naartoe gestuurd en detectie op afstand en SSH blijven uitgeschakeld. Als je weigert, keert CodexBar terug naar de gewone adaptieve modus zonder lokale activiteitsscans.";
+"adaptive_activity_consent_allow" = "Lokale activiteit toestaan";
+"adaptive_activity_consent_decline" = "Gewoon Adaptief gebruiken";
 
 /* Additional keys */
 "not_found" = "Niet gevonden";

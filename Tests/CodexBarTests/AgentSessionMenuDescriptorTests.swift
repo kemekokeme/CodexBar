@@ -40,6 +40,110 @@ struct AgentSessionMenuDescriptorTests {
     }
 
     @Test
+    func `adaptive refresh requires consent for local monitoring`() {
+        let settings = testSettingsStore(suiteName: "AgentSessionMenuDescriptorTests-adaptive-monitoring")
+        settings.agentSessionsEnabled = false
+        settings.refreshFrequency = .adaptiveAgentAware
+        let sessions = AgentSessionsStore(settings: settings)
+
+        #expect(!sessions.localMonitoringEnabled)
+        settings.adaptiveActivityScanConsent = .allowed
+        #expect(sessions.localMonitoringEnabled)
+        #expect(settings.agentSessionsEnabled == false)
+
+        settings.adaptiveActivityScanConsent = .declined
+        #expect(!sessions.localMonitoringEnabled)
+
+        settings.adaptiveActivityScanConsent = .allowed
+        settings.refreshFrequency = .adaptive
+        #expect(!sessions.localMonitoringEnabled)
+
+        settings.agentSessionsEnabled = true
+        #expect(sessions.localMonitoringEnabled)
+    }
+
+    @Test
+    func `adaptive-only scan retains a timestamp but not session details`() {
+        let settings = testSettingsStore(suiteName: "AgentSessionMenuDescriptorTests-adaptive-projection")
+        settings.agentSessionsEnabled = false
+        settings.refreshFrequency = .adaptiveAgentAware
+        settings.adaptiveActivityScanConsent = .allowed
+        let store = AgentSessionsStore(settings: settings)
+        let older = Date(timeIntervalSinceReferenceDate: 100)
+        let newer = Date(timeIntervalSinceReferenceDate: 200)
+        let sessions = [
+            Self.session(id: "older", host: "local", activity: older),
+            Self.session(id: "unknown", host: "local", activity: nil),
+            Self.session(id: "newer", host: "local", activity: newer),
+        ]
+
+        store.applyLocalScanResult(sessions, updatedAt: newer)
+
+        #expect(store.latestLocalActivityAt == newer)
+        #expect(store.localSessions.isEmpty)
+        #expect(store.lastUpdatedAt == newer)
+    }
+
+    @Test
+    func `adaptive-only local scan pauses under power and thermal constraints`() {
+        #expect(AgentSessionsStore.shouldScanLocally(
+            agentSessionsEnabled: false,
+            adaptiveActivityScanningEnabled: true,
+            lowPowerModeEnabled: false,
+            thermalState: .nominal))
+        #expect(!AgentSessionsStore.shouldScanLocally(
+            agentSessionsEnabled: false,
+            adaptiveActivityScanningEnabled: true,
+            lowPowerModeEnabled: true,
+            thermalState: .nominal))
+        #expect(!AgentSessionsStore.shouldScanLocally(
+            agentSessionsEnabled: false,
+            adaptiveActivityScanningEnabled: true,
+            lowPowerModeEnabled: false,
+            thermalState: .serious))
+        #expect(!AgentSessionsStore.shouldScanLocally(
+            agentSessionsEnabled: false,
+            adaptiveActivityScanningEnabled: false,
+            lowPowerModeEnabled: false,
+            thermalState: .nominal))
+        #expect(AgentSessionsStore.shouldScanLocally(
+            agentSessionsEnabled: true,
+            adaptiveActivityScanningEnabled: false,
+            lowPowerModeEnabled: true,
+            thermalState: .critical))
+    }
+
+    @Test
+    func `adaptive-only metadata reads require a detected agent process`() {
+        #expect(!LocalAgentSessionScanner.shouldScanSessionMetadata(
+            hasAgentProcesses: false,
+            includeFileOnlySessions: false))
+        #expect(LocalAgentSessionScanner.shouldScanSessionMetadata(
+            hasAgentProcesses: true,
+            includeFileOnlySessions: false))
+        #expect(LocalAgentSessionScanner.shouldScanSessionMetadata(
+            hasAgentProcesses: false,
+            includeFileOnlySessions: true))
+    }
+
+    @Test
+    func `revoking adaptive consent clears retained activity`() {
+        let settings = testSettingsStore(suiteName: "AgentSessionMenuDescriptorTests-consent-revoked")
+        settings.refreshFrequency = .adaptiveAgentAware
+        settings.adaptiveActivityScanConsent = .allowed
+        let store = AgentSessionsStore(settings: settings)
+        store.applyLocalScanResult(
+            [Self.session(id: "local", host: "local", activity: Date())])
+        #expect(store.latestLocalActivityAt != nil)
+
+        settings.adaptiveActivityScanConsent = .declined
+        store.settingsDidChange(remoteConfigurationChanged: false)
+
+        #expect(store.latestLocalActivityAt == nil)
+        #expect(store.localSessions.isEmpty)
+    }
+
+    @Test
     func `session section counts groups and renders unreachable hosts`() {
         let now = Date(timeIntervalSince1970: 1000)
         let local = Self.session(id: "local", host: "local-mac", activity: now.addingTimeInterval(-60))
@@ -160,7 +264,7 @@ struct AgentSessionMenuDescriptorTests {
         #expect(Self.remotePassCount(for: .settingsChangeDuringFlight) == 2)
     }
 
-    private static func session(id: String, host: String, activity: Date) -> AgentSession {
+    private static func session(id: String, host: String, activity: Date?) -> AgentSession {
         AgentSession(
             id: id,
             provider: .codex,

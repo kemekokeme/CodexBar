@@ -12,10 +12,37 @@ extension SettingsStore {
     var refreshFrequency: RefreshFrequency {
         get { self.defaultsState.refreshFrequency }
         set {
+            let previousValue = self.defaultsState.refreshFrequency
+            if newValue == .adaptiveAgentAware,
+               previousValue != .adaptiveAgentAware,
+               self.defaultsState.adaptiveActivityScanConsent == .declined
+            {
+                self.defaultsState.adaptiveActivityScanConsent = .undecided
+                self.userDefaults.set(
+                    AdaptiveActivityScanConsent.undecided.rawValue,
+                    forKey: "adaptiveActivityScanConsent")
+            }
             self.defaultsState.refreshFrequency = newValue
             self.userDefaults.set(newValue.rawValue, forKey: "refreshFrequency")
             self.noteBackgroundWorkSettingsChanged()
         }
+    }
+
+    var adaptiveActivityScanConsent: AdaptiveActivityScanConsent {
+        get { self.defaultsState.adaptiveActivityScanConsent }
+        set {
+            self.defaultsState.adaptiveActivityScanConsent = newValue
+            self.userDefaults.set(newValue.rawValue, forKey: "adaptiveActivityScanConsent")
+            self.noteBackgroundWorkSettingsChanged()
+        }
+    }
+
+    var adaptiveActivityScanningEnabled: Bool {
+        self.refreshFrequency == .adaptiveAgentAware && self.adaptiveActivityScanConsent == .allowed
+    }
+
+    var shouldRequestAdaptiveActivityScanConsent: Bool {
+        self.refreshFrequency == .adaptiveAgentAware && self.adaptiveActivityScanConsent == .undecided
     }
 
     /// When enabled, keeping the menu open through its short refresh delay fetches usage for every

@@ -1200,6 +1200,11 @@
 "quota_warning_notification_title" = "Cota %2$@ de %1$@ baixa";
 "quota_warning_onscreen_alert" = "Amosar unha alerta de texto en pantalla";
 "refresh_adaptive" = "Adaptativa";
+"refresh_adaptive_agent_aware" = "Adaptativa (actividade de axentes)";
+"adaptive_activity_consent_title" = "Permitir a actualización segundo a actividade?";
+"adaptive_activity_consent_message" = "O modo Adaptativo segundo a actividade de axentes pode inspeccionar a lista de procesos locais en execución, incluídas as liñas de comandos, para identificar Codex e Claude, e ler os metadatos de sesións coñecidas cada 30 segundos mentres programas. Con Agent Sessions desactivado, CodexBar só conserva na memoria a hora da actividade máis recente e descarta as rutas e identidades das sesións. Estes datos non se envían a ningún sitio, e a detección remota e SSH seguen desactivados. Se rexeitas, CodexBar volverá ao modo Adaptativo normal sen exploracións de actividade local.";
+"adaptive_activity_consent_allow" = "Permitir actividade local";
+"adaptive_activity_consent_decline" = "Usar o Adaptativo normal";
 "refresh_on_open_subtitle" = "Obtén o uso máis recente de cada provedor cada vez que abras o menú.";
 "refresh_on_open_title" = "Actualizar ao abrir o menú";
 "section_command_line" = "Liña de ordes";

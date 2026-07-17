@@ -5,6 +5,7 @@ extension SettingsStore {
         _ = self.providerOrder
         _ = self.providerEnablement
         _ = self.refreshFrequency
+        _ = self.adaptiveActivityScanConsent
         _ = self.launchAtLogin
         _ = self.debugMenuEnabled
         _ = self.debugDisableKeychainAccess

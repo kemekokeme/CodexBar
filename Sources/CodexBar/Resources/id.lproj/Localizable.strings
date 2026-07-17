@@ -738,6 +738,11 @@
 "refresh_15min" = "15 mnt";
 "refresh_30min" = "30 mnt";
 "refresh_adaptive" = "Adaptif";
+"refresh_adaptive_agent_aware" = "Adaptif (peka agen)";
+"adaptive_activity_consent_title" = "Izinkan penyegaran yang peka terhadap aktivitas?";
+"adaptive_activity_consent_message" = "Mode Adaptif yang peka terhadap agen dapat memeriksa daftar proses lokal yang sedang berjalan, termasuk baris perintah, untuk mengenali Codex dan Claude, lalu membaca metadata sesi yang dikenal setiap 30 detik saat Anda menulis kode. Saat Agent Sessions dinonaktifkan, CodexBar hanya menggunakan waktu aktivitas terbaru di memori serta membuang jalur dan identitas sesi. Data ini tidak dikirim ke mana pun, dan penemuan jarak jauh serta SSH tetap nonaktif. Jika Anda menolak, CodexBar kembali ke mode Adaptif biasa tanpa pemindaian aktivitas lokal.";
+"adaptive_activity_consent_allow" = "Izinkan Aktivitas Lokal";
+"adaptive_activity_consent_decline" = "Gunakan Adaptif Biasa";
 
 /* Additional keys */
 "not_found" = "Tidak ditemukan";

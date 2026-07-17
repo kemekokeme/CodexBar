@@ -289,6 +289,9 @@ final class UsageStore {
     @ObservationIgnored private var timerTask: Task<Void, Never>?
     /// In-memory only; resets on every launch.
     @ObservationIgnored private(set) var lastMenuOpenAt: Date?
+    /// Latest local Codex/Claude transcript activity observed by the existing session scanner.
+    /// In-memory only; paths and session identities never enter the refresh policy.
+    @ObservationIgnored private(set) var lastCodingActivityAt: Date?
     @ObservationIgnored var adaptiveRefreshScheduledAt: Date?
     @ObservationIgnored var tokenTimerTask: Task<Void, Never>?
     @ObservationIgnored var tokenRefreshSequenceTask: Task<Void, Never>?
@@ -777,7 +780,7 @@ final class UsageStore {
         let frequency = self.settings.refreshFrequency
         guard frequency != .manual else { return }
 
-        if frequency == .adaptive {
+        if frequency.usesAdaptivePolicy {
             // Background poller so the menu stays responsive; canceled when settings change or store
             // deallocates. Delay is recomputed before every tick from live power/thermal state and the
             // in-memory menu-open signal; the policy itself stays pure (Input is built here). `self` is
@@ -1532,20 +1535,22 @@ extension UsageStore {
 }
 
 extension UsageStore {
+    func retainCodingActivityIfNewer(_ date: Date) {
+        if self.lastCodingActivityAt.map({ date > $0 }) ?? true {
+            self.lastCodingActivityAt = date
+        }
+    }
+
+    func clearCodingActivityObservation() {
+        self.lastCodingActivityAt = nil
+    }
+
+    func restartAdaptiveTimerPreservingResetBoundary() {
+        self.startTimer(preservingResetBoundaryRefresh: true)
+    }
+
     func noteMenuOpened(at date: Date = Date()) {
         self.lastMenuOpenAt = date
-        guard self.settings.refreshFrequency == .adaptive else { return }
-
-        let decision = Self.adaptiveRefreshDecision(
-            now: date,
-            lastMenuOpenAt: date,
-            lowPowerModeEnabled: ProcessInfo.processInfo.isLowPowerModeEnabled,
-            thermalState: ProcessInfo.processInfo.thermalState)
-        let candidate = date.addingTimeInterval(TimeInterval(decision.delay.components.seconds))
-        guard Self.shouldAdvanceAdaptiveTimer(
-            scheduledAt: self.adaptiveRefreshScheduledAt,
-            candidate: candidate)
-        else { return }
-        self.startTimer(preservingResetBoundaryRefresh: true)
+        self.advanceAdaptiveTimerIfEarlier(at: date)
     }
 }

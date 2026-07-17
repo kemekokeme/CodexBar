@@ -736,6 +736,11 @@
 "refresh_15min" = "15 min";
 "refresh_30min" = "30 min";
 "refresh_adaptive" = "Adaptive";
+"refresh_adaptive_agent_aware" = "Adaptive (agent-aware)";
+"adaptive_activity_consent_title" = "Allow agent-aware refresh?";
+"adaptive_activity_consent_message" = "Adaptive (agent-aware) can inspect the local running-process list, including command lines, to identify Codex and Claude, then read known session metadata every 30 seconds while you are coding. With Agent Sessions off, CodexBar uses only the latest activity time in memory and discards session paths and identities. This activity data is not sent anywhere, and remote discovery and SSH stay off. If you decline, CodexBar returns to plain Adaptive without local activity scans.";
+"adaptive_activity_consent_allow" = "Allow Local Activity";
+"adaptive_activity_consent_decline" = "Use Plain Adaptive";
 
 /* Additional keys */
 "not_found" = "Not found";

@@ -727,6 +727,11 @@
 "refresh_15min" = "15分";
 "refresh_30min" = "30分";
 "refresh_adaptive" = "アダプティブ";
+"refresh_adaptive_agent_aware" = "アダプティブ（エージェント対応）";
+"adaptive_activity_consent_title" = "アクティビティ対応の更新を許可しますか？";
+"adaptive_activity_consent_message" = "エージェント対応のアダプティブ更新では、Codex と Claude を識別するために、コマンドラインを含むローカルの実行中プロセス一覧を調べ、コーディング中は既知のセッションメタデータを 30 秒ごとに読み取ることができます。Agent Sessions がオフの場合、CodexBar は最新のアクティビティ時刻だけをメモリで使用し、セッションのパスと識別情報を破棄します。このデータが外部に送信されることはなく、リモート検出と SSH はオフのままです。許可しない場合は、ローカルスキャンを行わない通常のアダプティブに戻ります。";
+"adaptive_activity_consent_allow" = "ローカルアクティビティを許可";
+"adaptive_activity_consent_decline" = "通常のアダプティブを使用";
 
 /* Additional keys */
 "not_found" = "見つかりません";
