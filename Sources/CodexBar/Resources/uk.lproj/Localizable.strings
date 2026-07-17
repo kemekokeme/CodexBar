@@ -1,5 +1,9 @@
 /* Ukrainian localization for CodexBar */
 
+"ollama_safari_cookie_access_hint" = "Для файлів cookie Safari програмі CodexBar потрібен повний доступ до диска (Системні параметри > Конфіденційність і безпека).";
+"ollama_browser_cookie_decryption_denied" = "Розшифрування файлів cookie %@ було відхилено у В’язці ключів; повторіть спробу за допомогою ручного оновлення.";
+"ollama_browser_cookie_decryption_disabled" = "Розшифрування файлів cookie %@ вимкнено в CodexBar; увімкніть доступ до В’язки ключів і оновіть.";
+
 " providers" = "провайдерів";
 "(System)" = "(Система)";
 "30d" = "30д";
@@ -1185,6 +1189,13 @@
 "Show Codex Spark usage" = "Показати використання Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Показує рядки квоти Codex Spark у меню та попередньому перегляді провайдера. Потрібно ввімкнути «Показати кредити + додаткове використання» в налаштуваннях «Відображення».";
 "Scroll to see more models" = "Прокрутіть, щоб побачити більше моделей";
+"DeepSeek this month token usage trend" = "Тенденція використання токенів DeepSeek цього місяця";
+"Chrome profile" = "Профіль Chrome";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "Виберіть сеанс DeepSeek Platform із виконаним входом, який надаватиме докладні дані про використання.";
+"Detailed usage unavailable." = "Докладні дані про використання недоступні.";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "Увійдіть у DeepSeek Platform у Chrome, щоб переглянути докладні дані про використання.";
+"Select a DeepSeek Chrome profile in Settings." = "Виберіть профіль Chrome для DeepSeek у налаштуваннях.";
+"Select profile…" = "Вибрати профіль…";
 
 "%@: %@" = "%@: %@";
 "Alternatively, set a custom path in Settings." = "Або встановіть спеціальний шлях у налаштуваннях.";

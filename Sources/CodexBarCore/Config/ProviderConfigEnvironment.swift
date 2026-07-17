@@ -51,7 +51,9 @@ public enum ProviderConfigEnvironment {
     }
 
     public static func supportsAPIKeyOverride(for provider: UsageProvider) -> Bool {
-        if self.directAPIKeyEnvironmentKey(for: provider) != nil { return true }
+        if self.directAPIKeyEnvironmentKey(for: provider) != nil {
+            return true
+        }
         switch provider {
         case .copilot, .kimik2, .warp, .codebuff, .crof, .doubao:
             return true
@@ -95,6 +97,8 @@ public enum ProviderConfigEnvironment {
             return env
         }
         return switch provider {
+        case .deepseek:
+            self.applyDeepSeekOverrides(base: base, config: config)
         case .deepgram:
             self.applyDeepgramOverrides(base: base, config: config)
         case .azureopenai:
@@ -105,9 +109,28 @@ public enum ProviderConfigEnvironment {
             self.applyDoubaoOverrides(base: base, config: config)
         case .sakana:
             self.applySakanaOverrides(base: base, config: config)
+        case .longcat:
+            self.applyLongCatOverrides(base: base, config: config)
         default:
             nil
         }
+    }
+
+    private static func applyDeepSeekOverrides(
+        base: [String: String],
+        config: ProviderConfig?) -> [String: String]
+    {
+        var env = base
+        if let platformToken = config?.sanitizedCookieHeader {
+            env[DeepSeekSettingsReader.platformTokenEnvironmentKey] = platformToken
+        }
+        if let profileID = config?.sanitizedDeepSeekProfileID {
+            env[DeepSeekSettingsReader.profileIDEnvironmentKey] = profileID
+        }
+        if let profileScope = config?.sanitizedDeepSeekProfileScope {
+            env[DeepSeekSettingsReader.profileScopeEnvironmentKey] = profileScope
+        }
+        return env
     }
 
     private static func applyMultiFieldCredentialOverrides(
@@ -367,6 +390,20 @@ public enum ProviderConfigEnvironment {
         var env = base
         if let cookieHeader = config.sanitizedCookieHeader {
             env[SakanaSettingsReader.cookieHeaderKey] = cookieHeader
+        }
+        return env
+    }
+
+    private static func applyLongCatOverrides(
+        base: [String: String],
+        config: ProviderConfig?) -> [String: String]
+    {
+        guard let config else { return base }
+        var env = base
+        if config.cookieSource == .manual,
+           let cookieHeader = config.sanitizedCookieHeader
+        {
+            env[LongCatSettingsReader.cookieHeaderKey] = cookieHeader
         }
         return env
     }

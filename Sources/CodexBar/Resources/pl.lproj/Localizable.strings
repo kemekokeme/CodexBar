@@ -1,5 +1,9 @@
 /* English localization for CodexBar (base/fallback) */
 
+"ollama_safari_cookie_access_hint" = "Pliki cookie Safari wymagają pełnego dostępu do dysku dla CodexBar (Ustawienia systemowe > Prywatność i ochrona).";
+"ollama_browser_cookie_decryption_denied" = "Odszyfrowanie plików cookie %@ zostało odrzucone w Pęku kluczy; spróbuj ponownie przez ręczne odświeżenie.";
+"ollama_browser_cookie_decryption_disabled" = "Odszyfrowanie plików cookie %@ jest wyłączone w CodexBar; włącz dostęp do Pęku kluczy i odśwież.";
+
 " providers" = " providers";
 "(System)" = "(System)";
 "30d" = "30d";
@@ -909,6 +913,13 @@
 "MiniMax 30 day token usage trend" = "Trend użycia tokenów MiniMax z 30 dni";
 "Today cash" = "Dzisiejsza gotówka";
 "DeepSeek 30 day token usage trend" = "Trend użycia tokenów DeepSeek z 30 dni";
+"DeepSeek this month token usage trend" = "Trend użycia tokenów DeepSeek w tym miesiącu";
+"Chrome profile" = "Profil Chrome";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "Wybierz zalogowaną sesję DeepSeek Platform, która ma dostarczać szczegółowe dane użycia.";
+"Detailed usage unavailable." = "Szczegółowe dane użycia są niedostępne.";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "Zaloguj się do DeepSeek Platform w Chrome, aby uzyskać szczegółowe dane użycia.";
+"Select a DeepSeek Chrome profile in Settings." = "Wybierz profil Chrome DeepSeek w Ustawieniach.";
+"Select profile…" = "Wybierz profil…";
 "cache-hit input" = "wejście trafienia pamięci podręcznej";
 "cache-miss input" = "wejście chybienia pamięci podręcznej";
 "output" = "wynik";

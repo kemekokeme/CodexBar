@@ -61,6 +61,7 @@ public enum UsageProvider: String, CaseIterable, Sendable, Codable {
     case chutes
     case crossmodel
     case clawrouter
+    case longcat
     case sub2api
     case wayfinder
     case zenmux
@@ -125,6 +126,7 @@ public enum IconStyle: String, Sendable, CaseIterable {
     case chutes
     case crossmodel
     case clawrouter
+    case longcat
     case sub2api
     case wayfinder
     case zenmux
@@ -280,6 +282,15 @@ public enum ProviderBrowserCookieDefaults {
 
     /// Copilot budget imports should stay Chrome-only by default to avoid prompting unrelated browsers.
     public static var copilotCookieImportOrder: BrowserCookieImportOrder? {
+        #if os(macOS)
+        [.chrome]
+        #else
+        nil
+        #endif
+    }
+
+    /// LongCat Auto imports only from Chrome by default to avoid prompting unrelated browser keychains.
+    public static var longcatCookieImportOrder: BrowserCookieImportOrder? {
         #if os(macOS)
         [.chrome]
         #else

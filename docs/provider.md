@@ -72,6 +72,7 @@ Each run returns a `ProviderFetchOutcome` with **attempts + errors** for debug U
 Expose a narrow set of protocols/structs that provider implementations can use:
 - `KeychainAPI`: read-only, allowlisted service/account pairs
 - `BrowserCookieAPI`: import cookies by domain list; returns cookie header + diagnostics
+- `BrowserLocalStorageAPI`: read origin-scoped key/value snapshots across browser profiles
 - `PTYAPI`: run CLI interactions with timeouts + “send on substring” + stop rules
 - `HTTPAPI`: URLSession wrapper with domain allowlist + standard headers + tracing
 - `WebViewScrapeAPI`: WKWebView lease + `evaluateJavaScript` + snapshot dumping
