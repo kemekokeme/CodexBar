@@ -29,7 +29,12 @@ public enum NeuralWattProviderDescriptor {
             branding: ProviderBranding(
                 iconStyle: .neuralwatt,
                 iconResourceName: "ProviderIcon-neuralwatt",
-                color: ProviderColor(red: 0.22, green: 0.85, blue: 0.55)),
+                color: ProviderColor(red: 0.22, green: 0.85, blue: 0.55),
+                confettiPalette: [
+                    ProviderColor(hex: 0x38D98C),
+                    ProviderColor(hex: 0x17243A),
+                    ProviderColor(hex: 0xFFFFFF),
+                ]),
             tokenCost: ProviderTokenCostConfig(
                 supportsTokenCost: false,
                 noDataMessage: { "Neuralwatt token cost history is not available via the quota API." }),
