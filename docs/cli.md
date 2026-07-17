@@ -146,7 +146,7 @@ codexbar cost --provider codex --group-by project
 codexbar cost --provider claude --format json --pretty
 codexbar serve --port 8080        # localhost HTTP JSON server
 codexbar serve --request-timeout 0 # disable serve request deadlines
-CODEXBAR_DASHBOARD_TOKEN="$(openssl rand -hex 32)" codexbar serve # token-gated dashboard snapshot
+CODEXBAR_DASHBOARD_TOKEN=YOUR_TOKEN codexbar serve # token-gated dashboard snapshot
 CODEXBAR_DASHBOARD_TOKEN=... codexbar serve --host 0.0.0.0 --allow-plain-http # LAN, cleartext accepted
 COPILOT_API_TOKEN=... codexbar --provider copilot --format json --pretty
 codexbar --status                 # include status page indicator/description

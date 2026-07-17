@@ -166,7 +166,7 @@ extension CodexBarCLI {
         Examples:
           codexbar serve
           codexbar serve --port 8080 --refresh-interval 60 --request-timeout 30
-          CODEXBAR_DASHBOARD_TOKEN="$(openssl rand -hex 32)" codexbar serve
+          CODEXBAR_DASHBOARD_TOKEN=YOUR_TOKEN codexbar serve
           CODEXBAR_DASHBOARD_TOKEN=... codexbar serve --host 0.0.0.0 --allow-plain-http
           curl http://127.0.0.1:8080/usage?provider=all
           curl -H "Authorization: Bearer $CODEXBAR_DASHBOARD_TOKEN" \\

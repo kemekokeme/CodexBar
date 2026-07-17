@@ -26,7 +26,7 @@ On the default loopback bind, `/usage` and `/cost` are unchanged and unauthentic
 openssl rand -hex 32
 
 # Preferred: environment variable (argv leaks via `ps`)
-CODEXBAR_DASHBOARD_TOKEN="$(openssl rand -hex 32)" codexbar serve
+CODEXBAR_DASHBOARD_TOKEN=YOUR_TOKEN codexbar serve
 
 # Also accepted, but visible in the process list
 codexbar serve --dashboard-token YOUR_TOKEN
