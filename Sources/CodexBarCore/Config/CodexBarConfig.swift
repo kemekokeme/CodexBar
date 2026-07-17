@@ -51,9 +51,13 @@ public struct CodexBarConfig: Codable, Sendable {
         var normalized: [ProviderConfig] = []
         normalized.reserveCapacity(max(self.providers.count, UsageProvider.allCases.count))
 
-        for provider in self.providers {
+        for var provider in self.providers {
             guard !seen.contains(provider.id) else { continue }
             seen.insert(provider.id)
+            if provider.id == .deepseek {
+                provider.deepseekProfileID = provider.sanitizedDeepSeekProfileID
+                provider.deepseekProfileScope = provider.sanitizedDeepSeekProfileScope
+            }
             normalized.append(provider)
         }
 
@@ -123,11 +127,14 @@ public struct ProviderConfig: Codable, Sendable, Identifiable {
     public var claudeSwapExecutablePath: String?
     public var codexActiveSource: CodexActiveSource?
     public var codexProfileHomePaths: [String]?
+    public var antigravityPrioritizeExhaustedQuotas: Bool?
     public var quotaWarnings: QuotaWarningConfig?
     public var kiloKnownOrganizations: [KiloOrganization]?
     public var kiloEnabledOrganizationIDs: [String]?
     public var awsProfile: String?
     public var awsAuthMode: String?
+    public var deepseekProfileID: String?
+    public var deepseekProfileScope: String?
 
     public init(
         id: UsageProvider,
@@ -146,11 +153,14 @@ public struct ProviderConfig: Codable, Sendable, Identifiable {
         claudeSwapExecutablePath: String? = nil,
         codexActiveSource: CodexActiveSource? = nil,
         codexProfileHomePaths: [String]? = nil,
+        antigravityPrioritizeExhaustedQuotas: Bool? = nil,
         quotaWarnings: QuotaWarningConfig? = nil,
         kiloKnownOrganizations: [KiloOrganization]? = nil,
         kiloEnabledOrganizationIDs: [String]? = nil,
         awsProfile: String? = nil,
-        awsAuthMode: String? = nil)
+        awsAuthMode: String? = nil,
+        deepseekProfileID: String? = nil,
+        deepseekProfileScope: String? = nil)
     {
         self.id = id
         self.enabled = enabled
@@ -168,11 +178,14 @@ public struct ProviderConfig: Codable, Sendable, Identifiable {
         self.claudeSwapExecutablePath = claudeSwapExecutablePath
         self.codexActiveSource = codexActiveSource
         self.codexProfileHomePaths = codexProfileHomePaths
+        self.antigravityPrioritizeExhaustedQuotas = antigravityPrioritizeExhaustedQuotas
         self.quotaWarnings = quotaWarnings
         self.kiloKnownOrganizations = kiloKnownOrganizations
         self.kiloEnabledOrganizationIDs = kiloEnabledOrganizationIDs
         self.awsProfile = awsProfile
         self.awsAuthMode = awsAuthMode
+        self.deepseekProfileID = deepseekProfileID
+        self.deepseekProfileScope = deepseekProfileScope
     }
 
     public var sanitizedAPIKey: String? {
@@ -209,6 +222,14 @@ public struct ProviderConfig: Codable, Sendable, Identifiable {
 
     public var sanitizedAWSAuthMode: String? {
         Self.clean(self.awsAuthMode)
+    }
+
+    public var sanitizedDeepSeekProfileID: String? {
+        Self.clean(self.deepseekProfileID).map(DeepSeekSettingsReader.canonicalProfileID)
+    }
+
+    public var sanitizedDeepSeekProfileScope: String? {
+        Self.clean(self.deepseekProfileScope)
     }
 
     private static func clean(_ raw: String?) -> String? {

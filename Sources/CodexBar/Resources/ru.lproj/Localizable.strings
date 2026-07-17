@@ -1196,6 +1196,13 @@
 "Show Codex Spark usage" = "Показывать использование Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Показывает строки квот Codex Spark в меню и предварительном просмотре провайдера. Требует включить «Показывать кредиты и доп. использование» в настройках «Отображение».";
 "Scroll to see more models" = "Прокрутите, чтобы увидеть больше моделей";
+"DeepSeek this month token usage trend" = "Динамика использования токенов DeepSeek в этом месяце";
+"Chrome profile" = "Профиль Chrome";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "Выберите активный сеанс DeepSeek Platform для получения подробных данных об использовании.";
+"Detailed usage unavailable." = "Подробные данные об использовании недоступны.";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "Войдите в DeepSeek Platform через Chrome, чтобы получить подробные данные об использовании.";
+"Select a DeepSeek Chrome profile in Settings." = "Выберите профиль Chrome для DeepSeek в настройках.";
+"Select profile…" = "Выбрать профиль…";
 
 "Choose a supported browser so CodexBar can read the matching account." = "Выберите поддерживаемый браузер, чтобы CodexBar мог прочитать соответствующую учетную запись.";
 "Choose Cursor account" = "Выберите учетную запись Cursor";

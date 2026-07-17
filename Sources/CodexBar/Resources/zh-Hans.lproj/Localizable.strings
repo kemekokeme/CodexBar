@@ -1166,6 +1166,13 @@
 "Show Codex Spark usage" = "显示 Codex Spark 用量";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "在菜单和提供商预览中显示 Codex Spark 配额行。需要在“显示”设置中启用“显示额度 + 额外用量”。";
 "Scroll to see more models" = "滚动查看更多模型";
+"DeepSeek this month token usage trend" = "DeepSeek 本月 token 用量趋势";
+"Chrome profile" = "Chrome 配置文件";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "选择要提供详细用量的已登录 DeepSeek Platform 会话。";
+"Detailed usage unavailable." = "详细用量不可用。";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "请在 Chrome 中登录 DeepSeek Platform 以查看详细用量。";
+"Select a DeepSeek Chrome profile in Settings." = "请在“设置”中选择 DeepSeek Chrome 配置文件。";
+"Select profile…" = "选择配置文件…";
 
 "%@: %@" = "%@：%@";
 "Alternatively, set a custom path in Settings." = "或者在“设置”中指定自定义路径。";

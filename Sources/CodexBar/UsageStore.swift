@@ -330,6 +330,7 @@ final class UsageStore {
     @ObservationIgnored var codexHistoricalDataset: CodexHistoricalDataset?
     @ObservationIgnored var codexHistoricalDatasetAccountKey: String?
     @ObservationIgnored var lastKnownResetSnapshots: [UsageProvider: UsageSnapshot] = [:]
+    @ObservationIgnored var deepseekProfileTransition: DeepSeekProfileTransition?
     @ObservationIgnored var sessionQuotaTransitionStates: [UsageProvider: SessionQuotaTransitionState] = [:]
     @ObservationIgnored var codexSessionQuotaBaselineRequirement: CodexSessionQuotaBaselineRequirement?
     var codexSessionQuotaBaselineRequired: Bool {
@@ -1159,7 +1160,7 @@ extension UsageStore {
                      .copilot, .devin, .vertexai, .kilo, .kiro, .kimi, .kimik2, .moonshot, .jetbrains, .perplexity,
                      .mimo, .doubao, .sakana, .abacus, .mistral, .codebuff, .crof, .windsurf, .venice, .manus,
                      .commandcode, .qoder, .stepfun, .bedrock, .grok, .groq, .t3chat, .llmproxy, .litellm, .zed,
-                     .deepgram, .poe, .chutes, .clawrouter, .wayfinder, .sub2api, .zenmux:
+                     .deepgram, .poe, .chutes, .clawrouter, .longcat, .wayfinder, .sub2api, .zenmux:
                     return unimplementedDebugLogMessages[provider] ?? "Debug log not yet implemented"
                 }
             }

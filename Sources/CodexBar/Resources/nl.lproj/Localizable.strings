@@ -1189,6 +1189,13 @@
 "Show Codex Spark usage" = "Codex Spark-gebruik tonen";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Toont Codex Spark-quotumregels in het menu en de voorvertoning van de provider. Vereist dat ‘Toon credits + extra gebruik’ is ingeschakeld in de instellingen voor Weergave.";
 "Scroll to see more models" = "Scroll om meer modellen te bekijken";
+"DeepSeek this month token usage trend" = "Trend van DeepSeek-tokengebruik deze maand";
+"Chrome profile" = "Chrome-profiel";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "Kies welke aangemelde DeepSeek Platform-sessie gedetailleerd gebruik levert.";
+"Detailed usage unavailable." = "Gedetailleerd gebruik niet beschikbaar.";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "Meld je in Chrome aan bij DeepSeek Platform voor gedetailleerd gebruik.";
+"Select a DeepSeek Chrome profile in Settings." = "Selecteer een DeepSeek Chrome-profiel in Instellingen.";
+"Select profile…" = "Profiel selecteren…";
 
 "%@: %@" = "%@: %@";
 "Alternatively, set a custom path in Settings." = "U kunt ook een aangepast pad instellen in Instellingen.";

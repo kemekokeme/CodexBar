@@ -521,8 +521,9 @@ extension UsageStore {
             } else {
                 self.lastKnownResetSnapshots[provider]
             }
+            let profileStable = self.preservingDeepSeekProfileCatalog(in: accountScoped, provider: provider)
             let stabilized = Self.commandCodeSnapshotResolvingDepletionOnEnrichmentFailure(
-                current: accountScoped,
+                current: profileStable,
                 previous: self.snapshots[provider])
             let backfilled = stabilized.backfillingResetTimes(from: resetBackfillSource)
             let warningAccountDiscriminator = Self.warningAccountDiscriminator(
@@ -547,6 +548,9 @@ extension UsageStore {
             }
             self.lastKnownResetSnapshots[provider] = backfilled
             self.snapshots[provider] = backfilled
+            if provider == .deepseek {
+                self.clearDeepSeekProfileTransition()
+            }
             if let tokenSnapshot = self.tokenSnapshot(fromProviderSnapshot: backfilled, provider: provider) {
                 self.tokenSnapshots[provider] = tokenSnapshot
                 self.tokenErrors[provider] = nil
@@ -638,8 +642,18 @@ extension UsageStore {
             return
         }
         // Credential-change cleanup already ran above; cancellation is now safe to suppress.
-        guard !Self.errorIsCancellation(error) else { return }
+        if Self.errorIsCancellation(error) {
+            if provider == .deepseek,
+               self.isCurrentProviderRefreshGeneration(provider, generation: context.generation)
+            {
+                self.markDeepSeekProfileTransitionUnavailable()
+            }
+            return
+        }
         guard self.isCurrentProviderRefreshGeneration(provider, generation: context.generation) else { return }
+        if provider == .deepseek {
+            self.markDeepSeekProfileTransitionUnavailable()
+        }
         self.bindCodexFailurePublicationOwner(
             provider: provider,
             expectedGuard: context.codexExpectedGuard)
@@ -649,6 +663,14 @@ extension UsageStore {
             provider: provider,
             error: error,
             context: context)
+    }
+
+    private func preservingDeepSeekProfileCatalog(
+        in snapshot: UsageSnapshot,
+        provider: UsageProvider) -> UsageSnapshot
+    {
+        guard provider == .deepseek else { return snapshot }
+        return snapshot.preservingDeepSeekPlatformProfiles(from: self.presentationSnapshot(for: .deepseek))
     }
 
     private func bindCodexFailurePublicationOwner(

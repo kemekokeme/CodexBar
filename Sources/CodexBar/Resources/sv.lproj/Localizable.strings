@@ -1188,6 +1188,13 @@
 "Show Codex Spark usage" = "Visa Codex Spark-användning";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Visar kvotrader för Codex Spark i menyn och i förhandsvisningen för leverantören. Kräver att ”Visa krediter och extra användning” är aktiverat under Visning i Inställningar.";
 "Scroll to see more models" = "Rulla för att se fler modeller";
+"DeepSeek this month token usage trend" = "Trend för DeepSeek-tokenanvändning den här månaden";
+"Chrome profile" = "Chrome-profil";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "Välj vilken inloggad DeepSeek Platform-session som ska ge detaljerad användning.";
+"Detailed usage unavailable." = "Detaljerad användning är inte tillgänglig.";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "Logga in på DeepSeek Platform i Chrome för detaljerad användning.";
+"Select a DeepSeek Chrome profile in Settings." = "Välj en DeepSeek Chrome-profil i Inställningar.";
+"Select profile…" = "Välj profil…";
 
 "%@: %@" = "%@: %@";
 "Alternatively, set a custom path in Settings." = "Alternativt kan du ange en anpassad sökväg i Inställningar.";

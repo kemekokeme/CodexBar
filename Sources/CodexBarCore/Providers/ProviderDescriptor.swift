@@ -111,6 +111,7 @@ public enum ProviderDescriptorRegistry {
         .chutes: ChutesProviderDescriptor.descriptor,
         .crossmodel: CrossModelProviderDescriptor.descriptor,
         .clawrouter: ClawRouterProviderDescriptor.descriptor,
+        .longcat: LongCatProviderDescriptor.descriptor,
         .sub2api: Sub2APIProviderDescriptor.descriptor,
         .wayfinder: WayfinderProviderDescriptor.descriptor,
         .zenmux: ZenMuxProviderDescriptor.descriptor,

@@ -1189,6 +1189,13 @@
 "Show Codex Spark usage" = "Afficher l’utilisation de Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Affiche les lignes de quota Codex Spark dans le menu et l’aperçu du fournisseur. Nécessite d’activer « Afficher les crédits + utilisation supplémentaire » dans les réglages Affichage.";
 "Scroll to see more models" = "Faites défiler pour voir plus de modèles";
+"DeepSeek this month token usage trend" = "Tendance d’utilisation des jetons DeepSeek ce mois-ci";
+"Chrome profile" = "Profil Chrome";
+"Choose which signed-in DeepSeek Platform session supplies detailed usage." = "Choisissez la session DeepSeek Platform connectée qui fournit l’utilisation détaillée.";
+"Detailed usage unavailable." = "L’utilisation détaillée n’est pas disponible.";
+"Sign in to DeepSeek Platform in Chrome for detailed usage." = "Connectez-vous à DeepSeek Platform dans Chrome pour afficher l’utilisation détaillée.";
+"Select a DeepSeek Chrome profile in Settings." = "Sélectionnez un profil Chrome DeepSeek dans Réglages.";
+"Select profile…" = "Sélectionner un profil…";
 
 "%@: %@" = "%@ : %@";
 "Alternatively, set a custom path in Settings." = "Vous pouvez également définir un chemin personnalisé dans Paramètres.";
