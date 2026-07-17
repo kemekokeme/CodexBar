@@ -11,19 +11,47 @@ extension UsageStore {
         let sourceRawValue: String?
         var resetBoundary: Date?
         var recoveryAboveThresholdCount: Int?
+        /// Identity-less Claude CLI samples share one detector key and can be transient.
+        /// Require a second low sample before celebrating an apparent reset from that key.
+        var pendingLowConfirmation: Bool
 
         init(
             wasAboveThreshold: Bool,
             lastObservedAt: Date,
             sourceRawValue: String?,
             resetBoundary: Date? = nil,
-            recoveryAboveThresholdCount: Int? = nil)
+            recoveryAboveThresholdCount: Int? = nil,
+            pendingLowConfirmation: Bool = false)
         {
             self.wasAboveThreshold = wasAboveThreshold
             self.lastObservedAt = lastObservedAt
             self.sourceRawValue = sourceRawValue
             self.resetBoundary = resetBoundary
             self.recoveryAboveThresholdCount = recoveryAboveThresholdCount
+            self.pendingLowConfirmation = pendingLowConfirmation
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case wasAboveThreshold
+            case lastObservedAt
+            case sourceRawValue
+            case resetBoundary
+            case recoveryAboveThresholdCount
+            case pendingLowConfirmation
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.wasAboveThreshold = try container.decode(Bool.self, forKey: .wasAboveThreshold)
+            self.lastObservedAt = try container.decode(Date.self, forKey: .lastObservedAt)
+            self.sourceRawValue = try container.decodeIfPresent(String.self, forKey: .sourceRawValue)
+            self.resetBoundary = try container.decodeIfPresent(Date.self, forKey: .resetBoundary)
+            self.recoveryAboveThresholdCount = try container.decodeIfPresent(
+                Int.self,
+                forKey: .recoveryAboveThresholdCount)
+            self.pendingLowConfirmation = try container.decodeIfPresent(
+                Bool.self,
+                forKey: .pendingLowConfirmation) ?? false
         }
     }
 
@@ -69,6 +97,8 @@ extension UsageStore {
         let detectorKey = Self.limitResetDetectorStateKey(
             provider: context.provider,
             accountIdentifier: accountIdentifier)
+        let requiresLowConfirmation = context.provider == .claude
+            && accountIdentifier == context.provider.rawValue
         let currentUsed = observation.usedPercent
         let currentObservedAt = observation.observedAt
         let wasAboveThreshold = currentUsed > Self.limitResetThreshold
@@ -98,8 +128,18 @@ extension UsageStore {
             true
         }
         let crossedBelowThreshold = !sourceChanged && previousState?.wasAboveThreshold == true && !wasAboveThreshold
-        let shouldPost = crossedBelowThreshold && resetBoundaryAllowsPost && !claudeWeeklyRecoveryPending
+        let confirmingLowSample = !sourceChanged && previousState?.pendingLowConfirmation == true && !wasAboveThreshold
+        let shouldPost = if requiresLowConfirmation {
+            confirmingLowSample && !claudeWeeklyRecoveryPending
+        } else {
+            crossedBelowThreshold && resetBoundaryAllowsPost && !claudeWeeklyRecoveryPending
+        }
         let suppressedGuardedCrossing = crossedBelowThreshold && !resetBoundaryAllowsPost
+        let shouldAwaitLowConfirmation = requiresLowConfirmation
+            && crossedBelowThreshold
+            && !confirmingLowSample
+            && resetBoundaryAllowsPost
+            && !claudeWeeklyRecoveryPending
         // Sessions retain the last non-regressed boundary on every guarded sample. Codex weekly crossings
         // adopt a newly appearing boundary so a later genuine advance can still trigger once.
         let shouldPreserveBoundary = !sourceChanged && !resetBoundaryAllowsPost
@@ -115,7 +155,7 @@ extension UsageStore {
             && nextRecoveryCount >= Self.claudeWeeklyRecoveryObservationCount
         let nextWasAboveThreshold = if claudeWeeklyRecoveryPending {
             claudeWeeklyRecoveryConfirmed
-        } else if shouldPreserveBaseline {
+        } else if shouldPreserveBaseline || shouldAwaitLowConfirmation {
             true
         } else {
             wasAboveThreshold
@@ -133,7 +173,8 @@ extension UsageStore {
             lastObservedAt: currentObservedAt,
             sourceRawValue: sourceRawValue,
             resetBoundary: shouldPreserveBoundary ? previousState?.resetBoundary : observation.resetBoundary,
-            recoveryAboveThresholdCount: persistedRecoveryCount)
+            recoveryAboveThresholdCount: persistedRecoveryCount,
+            pendingLowConfirmation: shouldAwaitLowConfirmation)
         self.persistLimitResetDetectorStates(
             states,
             defaultsKey: descriptor.defaultsKey,
@@ -167,6 +208,11 @@ extension UsageStore {
             ])
         switch descriptor.seriesName {
         case .session:
+            self.emitQuotaResetHook(
+                provider: context.provider,
+                window: .session,
+                usedPercent: currentUsed,
+                accountLabel: accountLabel)
             let event = SessionLimitResetEvent(
                 provider: context.provider,
                 accountIdentifier: accountIdentifier,
@@ -174,6 +220,11 @@ extension UsageStore {
                 usedPercent: currentUsed)
             NotificationCenter.default.post(name: .codexbarSessionLimitReset, object: event)
         case .weekly:
+            self.emitQuotaResetHook(
+                provider: context.provider,
+                window: .weekly,
+                usedPercent: currentUsed,
+                accountLabel: accountLabel)
             let event = WeeklyLimitResetEvent(
                 provider: context.provider,
                 accountIdentifier: accountIdentifier,

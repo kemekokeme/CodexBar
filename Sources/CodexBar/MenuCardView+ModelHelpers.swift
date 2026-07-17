@@ -82,10 +82,6 @@ extension UsageMenuCardView.Model {
             return notes + subscriptionNotes
         }
 
-        if input.provider == .crossmodel, let crossModel = input.snapshot?.crossModelUsage {
-            return Self.crossModelSpendNotes(crossModel) + subscriptionNotes
-        }
-
         guard input.provider == .openrouter,
               let openRouter = input.snapshot?.openRouterUsage
         else {
@@ -257,6 +253,7 @@ extension UsageMenuCardView.Model {
         case let (current?, candidate?):
             current.hintLine == candidate.hintLine &&
                 current.errorLine == candidate.errorLine &&
+                (current.meteredLine == nil) == (candidate.meteredLine == nil) &&
                 current.comparisonLines.count == candidate.comparisonLines.count
         default:
             false
@@ -283,7 +280,7 @@ extension UsageMenuCardView.Model {
         let primaryLabel = if input.provider == .cursor, snapshot.cursorRequests != nil {
             "Requests"
         } else if input.provider == .grok {
-            GrokProviderDescriptor.primaryLabel(window: snapshot.primary) ?? input.metadata.sessionLabel
+            GrokProviderDescriptor.primaryLabel(window: snapshot.primary, now: input.now) ?? input.metadata.sessionLabel
         } else if input.provider == .doubao {
             DoubaoProviderDescriptor.primaryLabel(window: snapshot.primary) ?? input.metadata.sessionLabel
         } else if input.provider == .sub2api {
@@ -343,6 +340,15 @@ extension UsageMenuCardView.Model {
         guard let lastError = input.lastError?.trimmingCharacters(in: .whitespacesAndNewlines),
               !lastError.isEmpty
         else {
+            return nil
+        }
+        // Local Codex session costs are independent from OAuth, CLI quota, and OpenAI web
+        // dashboard access. Do not present a failed account-level quota fetch as a failure of
+        // a valid local API-key ledger.
+        if input.codexLocalSessionCostLedgerEnabled,
+           self.hasLocalCodexTokenUsage(input),
+           self.isRemoteCodexQuotaFetchError(lastError)
+        {
             return nil
         }
         if self.shouldShowRateLimitsUnavailablePlaceholder(input: input, lastError: lastError) {
@@ -406,6 +412,10 @@ extension UsageMenuCardView.Model {
             self.tokenUsageSnapshot(input: input) != nil
     }
 
+    private static func isRemoteCodexQuotaFetchError(_ error: String) -> Bool {
+        error.localizedCaseInsensitiveContains("Codex usage is temporarily unavailable")
+    }
+
     private static func shouldShowRateLimitsUnavailablePlaceholder(input: Input, lastError: String? = nil) -> Bool {
         let currentError = lastError ?? input.lastError
         if let currentError = currentError?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -464,7 +474,7 @@ extension UsageMenuCardView.Model {
         pace: UsagePace?,
         showUsed: Bool) -> PaceDetail?
     {
-        guard let pace else { return nil }
+        guard let pace, window.remainingPercent > 0 else { return nil }
         let detail = UsagePaceText.weeklyDetail(provider: provider, pace: pace, now: now)
         let expectedUsed = detail.expectedUsedPercent
         let actualUsed = window.usedPercent
@@ -507,7 +517,7 @@ extension UsageMenuCardView.Model {
         input: Input,
         pace: UsagePace? = nil) -> PaceDetail?
     {
-        guard self.supportsResetWindowPace(provider: input.provider, window: window),
+        guard self.supportsResetWindowPace(provider: input.provider, window: window, now: input.now),
               window.remainingPercent > 0
         else { return nil }
         let paceWindow = Self.resetWindowForPace(provider: input.provider, window: window)
@@ -525,18 +535,28 @@ extension UsageMenuCardView.Model {
             showUsed: input.usageBarsShowUsed)
     }
 
+    private static let weeklyWindowMinutes = 7 * 24 * 60
     private static let monthlyWindowSentinelMinutes = 30 * 24 * 60
 
-    private static func supportsResetWindowPace(provider: UsageProvider, window: RateWindow) -> Bool {
+    private static func supportsResetWindowPace(provider: UsageProvider, window: RateWindow, now: Date) -> Bool {
         switch provider {
         case .copilot:
-            window.resetsAt != nil
+            return window.resetsAt != nil
         case .cursor:
-            window.windowMinutes != nil
+            return window.windowMinutes != nil
+        case .grok:
+            guard GrokProviderDescriptor.primaryLabel(window: window, now: now) == "Weekly",
+                  let resetsAt = window.resetsAt
+            else { return false }
+            let windowMinutes = window.windowMinutes ?? self.weeklyWindowMinutes
+            let timeUntilReset = resetsAt.timeIntervalSince(now)
+            return windowMinutes > 0
+                && timeUntilReset > 0
+                && timeUntilReset <= TimeInterval(windowMinutes) * 60
         case .alibaba, .alibabatokenplan, .doubao, .opencodego:
-            window.windowMinutes == self.monthlyWindowSentinelMinutes
+            return window.windowMinutes == self.monthlyWindowSentinelMinutes
         default:
-            false
+            return false
         }
     }
 
@@ -840,20 +860,6 @@ extension UsageMenuCardView.Model {
         }
 
         return nil
-    }
-
-    static func crossModelSpendNotes(_ usage: CrossModelUsageSnapshot) -> [String] {
-        let candidates: [(String, Double?)] = [
-            (L("Today"), usage.daily?.cost),
-            (L("This week"), usage.weekly?.cost),
-            (L("This month"), usage.monthly?.cost),
-        ]
-        let rendered = candidates.compactMap { candidate -> String? in
-            guard let value = candidate.1 else { return nil }
-            return "\(candidate.0): \(usage.currencyString(value))"
-        }
-        guard !rendered.isEmpty else { return [] }
-        return [rendered.joined(separator: " · ")]
     }
 
     static func openRouterQuotaDetail(provider: UsageProvider, snapshot: UsageSnapshot) -> String? {

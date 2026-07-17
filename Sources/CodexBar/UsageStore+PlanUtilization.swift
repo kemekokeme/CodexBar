@@ -11,26 +11,6 @@ extension UsageStore {
     private nonisolated static let planUtilizationUnscopedPreferredKey = "__unscoped__"
     private nonisolated static let claudeOAuthPlanUtilizationAccountKeyPrefix = "__claude_oauth__:"
 
-    enum ClaudeOAuthActiveAccountObservation: Equatable, Sendable {
-        case stable(identity: String?)
-        case changed
-    }
-
-    struct ClaudeOAuthAccountBindingCandidate: Codable, Equatable {
-        let identity: String
-        let observedAt: Date
-    }
-
-    private struct ClaudeOAuthHistoryEvidence {
-        let owner: String
-        let persistentRefHash: String?
-        let keychainCredentialMismatch: Bool
-        let keychainCredentialAbsent: Bool
-        let keychainCredentialUnavailable: Bool
-        let activeAccountObservation: ClaudeOAuthActiveAccountObservation
-        let observedAt: Date
-    }
-
     func supportsPlanUtilizationHistory(for provider: UsageProvider) -> Bool {
         switch provider {
         case .codex, .claude:

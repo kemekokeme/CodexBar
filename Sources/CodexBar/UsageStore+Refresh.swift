@@ -132,10 +132,13 @@ extension UsageStore {
         }
 
         let request = self.providerRefreshCoordinator.beginReplacingRequest(for: provider)
-        self.providerRefreshPublicationContexts[provider] = (
+        self.providerRefreshPublicationContexts[provider] = ProviderRefreshPublicationContext(
             generation: request.generation,
             enablementRevision: self.settings.providerEnablementRevision(for: provider),
             configRevision: self.settings.providerConfigRevision(for: provider),
+            tokenCostScopeSignature: Self.tokenCostRequiresProviderSnapshot(provider)
+                ? self.tokenSnapshotScopeSignature(for: provider)
+                : nil,
             allowDisabled: allowDisabled)
         let task = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -150,17 +153,22 @@ extension UsageStore {
                 // A replacement can wait behind a predecessor while Settings changes. Capture
                 // the publication inputs at actual fetch start so that queued work uses the new
                 // configuration, while later changes still reject its suspended result.
-                self.providerRefreshPublicationContexts[provider] = (
+                self.providerRefreshPublicationContexts[provider] = ProviderRefreshPublicationContext(
                     generation: request.generation,
                     enablementRevision: self.settings.providerEnablementRevision(for: provider),
                     configRevision: self.settings.providerConfigRevision(for: provider),
+                    tokenCostScopeSignature: Self.tokenCostRequiresProviderSnapshot(provider)
+                        ? self.tokenSnapshotScopeSignature(for: provider)
+                        : nil,
                     allowDisabled: allowDisabled)
                 snapshotUpdatedAtBeforeRefresh = self.snapshot(for: provider)?.updatedAt
                 didStartRefresh = true
-                await self.refreshProviderTracked(
-                    provider,
-                    allowDisabled: allowDisabled,
-                    generation: request.generation)
+                await ProviderRefreshRequestContext.$id.withValue(UUID()) {
+                    await self.refreshProviderTracked(
+                        provider,
+                        allowDisabled: allowDisabled,
+                        generation: request.generation)
+                }
             }
             let publishedNewSnapshot = didStartRefresh &&
                 self.snapshot(for: provider)?.updatedAt != snapshotUpdatedAtBeforeRefresh
@@ -186,7 +194,9 @@ extension UsageStore {
             return false
         }
         return context.enablementRevision == self.settings.providerEnablementRevision(for: provider) &&
-            context.configRevision == self.settings.providerConfigRevision(for: provider)
+            context.configRevision == self.settings.providerConfigRevision(for: provider) &&
+            (context.tokenCostScopeSignature == nil ||
+                context.tokenCostScopeSignature == self.tokenSnapshotScopeSignature(for: provider))
     }
 
     func currentProviderRefreshAllowsDisabledPublication(_ provider: UsageProvider) -> Bool {
@@ -519,8 +529,9 @@ extension UsageStore {
             } else {
                 self.lastKnownResetSnapshots[provider]
             }
+            let profileStable = self.preservingDeepSeekProfileCatalog(in: accountScoped, provider: provider)
             let stabilized = Self.commandCodeSnapshotResolvingDepletionOnEnrichmentFailure(
-                current: accountScoped,
+                current: profileStable,
                 previous: self.snapshots[provider])
             let backfilled = stabilized.backfillingResetTimes(from: resetBackfillSource)
             let warningAccountDiscriminator = Self.warningAccountDiscriminator(
@@ -545,12 +556,15 @@ extension UsageStore {
             }
             self.lastKnownResetSnapshots[provider] = backfilled
             self.snapshots[provider] = backfilled
+            if provider == .deepseek {
+                self.clearDeepSeekProfileTransition()
+            }
             if let tokenSnapshot = self.tokenSnapshot(fromProviderSnapshot: backfilled, provider: provider) {
-                self.tokenSnapshots[provider] = tokenSnapshot
+                self.publishTokenSnapshot(tokenSnapshot, for: provider)
                 self.tokenErrors[provider] = nil
                 self.tokenFailureGates[provider]?.recordSuccess()
             } else if Self.tokenCostRequiresProviderSnapshot(provider) {
-                self.tokenSnapshots.removeValue(forKey: provider)
+                self.publishConfirmedEmptyTokenSnapshot(for: provider)
                 self.tokenErrors[provider] = nil
             }
             self.lastSourceLabels[provider] = result.sourceLabel
@@ -636,8 +650,18 @@ extension UsageStore {
             return
         }
         // Credential-change cleanup already ran above; cancellation is now safe to suppress.
-        guard !Self.errorIsCancellation(error) else { return }
+        if Self.errorIsCancellation(error) {
+            if provider == .deepseek,
+               self.isCurrentProviderRefreshGeneration(provider, generation: context.generation)
+            {
+                self.markDeepSeekProfileTransitionUnavailable()
+            }
+            return
+        }
         guard self.isCurrentProviderRefreshGeneration(provider, generation: context.generation) else { return }
+        if provider == .deepseek {
+            self.markDeepSeekProfileTransitionUnavailable()
+        }
         self.bindCodexFailurePublicationOwner(
             provider: provider,
             expectedGuard: context.codexExpectedGuard)
@@ -647,6 +671,14 @@ extension UsageStore {
             provider: provider,
             error: error,
             context: context)
+    }
+
+    private func preservingDeepSeekProfileCatalog(
+        in snapshot: UsageSnapshot,
+        provider: UsageProvider) -> UsageSnapshot
+    {
+        guard provider == .deepseek else { return snapshot }
+        return snapshot.preservingDeepSeekPlatformProfiles(from: self.presentationSnapshot(for: .deepseek))
     }
 
     private func bindCodexFailurePublicationOwner(
@@ -942,7 +974,7 @@ extension UsageStore {
         self.knownLimitsAvailabilityByProvider.removeValue(forKey: .claude)
         self.lastSourceLabels.removeValue(forKey: .claude)
         self.accountSnapshots.removeValue(forKey: .claude)
-        self.tokenSnapshots.removeValue(forKey: .claude)
+        self.clearTokenSnapshot(for: .claude)
         self.tokenErrors[.claude] = nil
         self.failureGates[.claude]?.reset()
         self.tokenFailureGates[.claude]?.reset()
@@ -1062,7 +1094,14 @@ extension UsageStore {
                 self.errors[provider] = error.localizedDescription
                 if !preservesPriorData, !preservesClaudeWebSessionFailure {
                     self.snapshots.removeValue(forKey: provider)
+                    if Self.tokenCostRequiresProviderSnapshot(provider) {
+                        self.clearTokenSnapshot(for: provider)
+                    }
                 }
+                self.emitHook(
+                    .refreshFailed,
+                    provider: provider,
+                    status: Self.refreshFailureHookStatus(error))
             } else {
                 self.errors[provider] = nil
             }

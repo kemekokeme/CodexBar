@@ -31,6 +31,9 @@ extension UsageStore {
         self.lastKnownResetSnapshots.removeValue(forKey: provider)
         self.errors[provider] = nil
         self.diagnostics[provider] = nil
+        if provider == .deepseek {
+            self.clearDeepSeekProfileTransition()
+        }
         if provider == .gemini {
             self.clearGeminiConsumerTierDeprecationObservation()
         }
@@ -49,7 +52,7 @@ extension UsageStore {
         if provider == .claude {
             self.clearClaudeSwapAccountState()
         }
-        self.tokenSnapshots.removeValue(forKey: provider)
+        self.clearTokenSnapshot(for: provider)
         self.tokenErrors[provider] = nil
         self.providerStorageFootprints.removeValue(forKey: provider)
         self.failureGates[provider]?.reset()

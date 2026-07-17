@@ -227,6 +227,7 @@ extension UsageStorePlanUtilizationTests {
         let state = try #require(states["claude:legacy"])
         #expect(state.wasAboveThreshold)
         #expect(state.recoveryAboveThresholdCount == nil)
+        #expect(!state.pendingLowConfirmation)
     }
 
     @Test
