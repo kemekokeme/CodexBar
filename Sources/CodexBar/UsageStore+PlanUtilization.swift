@@ -267,8 +267,7 @@ extension UsageStore {
                         samplesToPersist.removeAll { $0.name == .session || $0.name == .weekly }
                     }
                 case .ambiguous:
-                    histories.removeAll { $0.name == .session || $0.name == .weekly }
-                    samplesToPersist.removeAll { $0.name == .session || $0.name == .weekly }
+                    samplesToPersist.removeAll { $0.name == .session }
                     identitiesChanged = identities.removeValue(forKey: identityKey) != nil
                 }
                 if identitiesChanged {
@@ -570,7 +569,7 @@ extension UsageStore {
                 appendWindow(self.planUtilizationSessionWindow(provider: provider, snapshot: snapshot), name: .session)
                 appendWindow(self.planUtilizationWeeklyWindow(provider: provider, snapshot: snapshot), name: .weekly)
             case .ambiguous:
-                break
+                appendWindow(self.planUtilizationWeeklyWindow(provider: provider, snapshot: snapshot), name: .weekly)
             }
         }
 

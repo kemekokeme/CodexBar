@@ -705,6 +705,11 @@ extension SessionEquivalentForecastTests {
             provider: .zai,
             accountKey: nil,
             historyIdentity: firstIdentity))
+        let ambiguousHistories = store.planUtilizationHistory(for: .zai)
+        #expect(findSeries(
+            ambiguousHistories,
+            name: .weekly,
+            windowMinutes: 10080)?.entries.last?.usedPercent == 40)
 
         let restored = exactSnapshot(usedPercent: 30, at: now.addingTimeInterval(3600))
         await store.recordPlanUtilizationHistorySample(provider: .zai, snapshot: restored, now: restored.updatedAt)
