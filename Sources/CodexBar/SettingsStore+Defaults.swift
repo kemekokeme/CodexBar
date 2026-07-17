@@ -282,6 +282,14 @@ extension SettingsStore {
         }
     }
 
+    var menuBarHighContrastOnInactiveDisplays: Bool {
+        get { self.defaultsState.menuBarHighContrastOnInactiveDisplays }
+        set {
+            self.defaultsState.menuBarHighContrastOnInactiveDisplays = newValue
+            self.userDefaults.set(newValue, forKey: "menuBarHighContrastOnInactiveDisplays")
+        }
+    }
+
     private var menuBarDisplayModeRaw: String? {
         get { self.defaultsState.menuBarDisplayModeRaw }
         set {

@@ -532,6 +532,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Style de la barre de menus";
 "menu_bar_style_subtitle" = "Définit l’apparence de l’élément dans la barre de menus.";
+"menu_bar_inactive_display_contrast_title" = "Améliorer la visibilité sur les écrans inactifs";
+"menu_bar_inactive_display_contrast_subtitle" = "Utilise un rendu à contraste élevé pour que l’icône et la mesure restent lisibles sur les autres écrans.";
 "menu_bar_style_critters" = "Créatures";
 "menu_bar_style_bars" = "Barres de mesure";
 "menu_bar_style_icon_percent" = "Icône et pourcentage";
@@ -712,6 +714,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "Coût (estimé)";
 "cost_estimate_hint" = "Estimé à partir des journaux locaux · peut différer de votre facture";
+"codex_api_estimate_header" = "Estimation équivalente à l’API";
+"codex_api_estimate_hint" = "Utilisation locale × tarifs API publics · ce n’est ni une facture d’abonnement ni la valeur d’un forfait";
+"codex_api_estimate_not_billed" = "ce n’est ni une facture d’abonnement ni la valeur d’un forfait";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "Aucun IDE JetBrains avec AI Assistant détecté. Installez un IDE JetBrains et activez AI Assistant.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "Jeton API OpenRouter non configuré. Définissez la variable d'environnement OPENROUTER_API_KEY ou configurez-la dans Paramètres.";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "Jeton API z.ai introuvable. Définissez apiKey dans ~/.codexbar/config.json ou Z_AI_API_KEY.";
@@ -1180,3 +1185,16 @@
 "Show Codex Spark usage" = "Afficher l’utilisation de Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Affiche les lignes de quota Codex Spark dans le menu et l’aperçu du fournisseur. Nécessite d’activer « Afficher les crédits + utilisation supplémentaire » dans les réglages Affichage.";
 "Scroll to see more models" = "Faites défiler pour voir plus de modèles";
+
+"%@: %@" = "%@ : %@";
+"Alternatively, set a custom path in Settings." = "Vous pouvez également définir un chemin personnalisé dans Paramètres.";
+"Choose a supported browser so CodexBar can read the matching account." = "Choisissez un navigateur pris en charge pour que CodexBar puisse lire le compte correspondant.";
+"Choose Cursor account" = "Choisissez le compte Cursor";
+"Choose which Cursor account CodexBar should use." = "Choisissez le compte Cursor que CodexBar doit utiliser.";
+"Finish switching to a different Cursor account in your browser, then try again." = "Terminez de passer à un autre compte Cursor dans votre navigateur, puis réessayez.";
+"Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar." = "Installez un IDE JetBrains avec AI Assistant activé, puis actualisez CodexBar.";
+"Request quota: %@ / %@" = "Quota de requêtes : %@ / %@";
+"Sign in with Claude Code..." = "Connectez-vous avec Claude Code...";
+"Timed out waiting for Cursor account switch. %@" = "Le délai d'attente pour le changement de compte Cursor a expiré. %@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "Le délai d'attente pour le changement de compte Cursor a expiré. %@ Dernière erreur : %@";
+"Use Account" = "Utiliser le compte";

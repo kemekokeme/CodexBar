@@ -533,6 +533,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Стиль строки меню";
 "menu_bar_style_subtitle" = "Как выглядит элемент строки меню.";
+"menu_bar_inactive_display_contrast_title" = "Повысить видимость на неактивных дисплеях";
+"menu_bar_inactive_display_contrast_subtitle" = "Использует высококонтрастную отрисовку, чтобы значок и показатель оставались читаемыми на других дисплеях.";
 "menu_bar_style_critters" = "Декоративные индикаторы";
 "menu_bar_style_bars" = "Полосы-индикаторы";
 "menu_bar_style_icon_percent" = "Значок и процент";
@@ -713,6 +715,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "Стоимость (оценочная)";
 "cost_estimate_hint" = "Оценка на основе локальных журналов · может отличаться от суммы в счёте.";
+"codex_api_estimate_header" = "Оценка, эквивалентная API";
+"codex_api_estimate_hint" = "Локальное использование × публичные цены API · это не счёт за подписку и не ценность плана";
+"codex_api_estimate_not_billed" = "это не счёт за подписку и не ценность плана";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "JetBrains IDE с включённым AI Assistant не обнаружена. Установите JetBrains IDE и включите AI Assistant.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "API-токен OpenRouter не настроен. Задайте переменную окружения OPENROUTER_API_KEY или настройте его в настройках.";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "API-токен z.ai не найден. Задайте apiKey в ~/.codexbar/config.json или Z_AI_API_KEY.";
@@ -1187,3 +1192,11 @@
 "Show Codex Spark usage" = "Показывать использование Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Показывает строки квот Codex Spark в меню и предварительном просмотре провайдера. Требует включить «Показывать кредиты и доп. использование» в настройках «Отображение».";
 "Scroll to see more models" = "Прокрутите, чтобы увидеть больше моделей";
+
+"Choose a supported browser so CodexBar can read the matching account." = "Выберите поддерживаемый браузер, чтобы CodexBar мог прочитать соответствующую учетную запись.";
+"Choose Cursor account" = "Выберите учетную запись Cursor";
+"Choose which Cursor account CodexBar should use." = "Выберите, какую учетную запись Cursor следует использовать CodexBar.";
+"Finish switching to a different Cursor account in your browser, then try again." = "Завершите переключение на другую учетную запись Cursor в браузере, а затем повторите попытку.";
+"Timed out waiting for Cursor account switch. %@" = "Истекло время ожидания переключения учетной записи Cursor. %@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "Истекло время ожидания переключения учетной записи Cursor. %@ Последняя ошибка: %@";
+"Use Account" = "Использовать учетную запись";

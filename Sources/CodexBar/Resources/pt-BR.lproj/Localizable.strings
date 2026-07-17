@@ -529,6 +529,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Estilo da barra de menus";
 "menu_bar_style_subtitle" = "Como o item da barra de menus é desenhado.";
+"menu_bar_inactive_display_contrast_title" = "Melhorar a visibilidade em telas inativas";
+"menu_bar_inactive_display_contrast_subtitle" = "Usa renderização de alto contraste para manter o ícone e a métrica legíveis em outras telas.";
 "menu_bar_style_critters" = "Bichinhos";
 "menu_bar_style_bars" = "Barras de medição";
 "menu_bar_style_icon_percent" = "Ícone e porcentagem";
@@ -709,6 +711,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "Custo (estimado)";
 "cost_estimate_hint" = "Estimado a partir de logs locais · pode diferir da sua fatura";
+"codex_api_estimate_header" = "Estimativa equivalente à API";
+"codex_api_estimate_hint" = "Uso local × preços públicos de API · não é uma fatura de assinatura nem o valor de um plano";
+"codex_api_estimate_not_billed" = "não é uma fatura de assinatura nem o valor de um plano";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "Nenhuma IDE JetBrains com AI Assistant detectada. Instale uma IDE JetBrains e ative o AI Assistant.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "Token de API do OpenRouter não configurado. Defina a variável de ambiente OPENROUTER_API_KEY ou configure em Ajustes.";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "Token de API do z.ai não encontrado. Defina apiKey em ~/.codexbar/config.json ou Z_AI_API_KEY.";
@@ -1181,3 +1186,16 @@
 "Show Codex Spark usage" = "Mostrar uso do Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Mostra as linhas de cota do Codex Spark no menu e na prévia do provedor. Requer ativar “Mostrar créditos + uso extra” nos ajustes de Exibição.";
 "Scroll to see more models" = "Role para ver mais modelos";
+
+"%@: %@" = "%@: %@";
+"Alternatively, set a custom path in Settings." = "Como alternativa, defina um caminho personalizado em Configurações.";
+"Choose a supported browser so CodexBar can read the matching account." = "Escolha um navegador compatível para que o CodexBar possa ler a conta correspondente.";
+"Choose Cursor account" = "Escolha a conta do Cursor";
+"Choose which Cursor account CodexBar should use." = "Escolha qual conta de Cursor o CodexBar deve usar.";
+"Finish switching to a different Cursor account in your browser, then try again." = "Termine de mudar para uma conta diferente do Cursor no seu navegador e tente novamente.";
+"Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar." = "Instale um IDE JetBrains com AI Assistant habilitado e atualize o CodexBar.";
+"Request quota: %@ / %@" = "Cota de solicitação: %@ / %@";
+"Sign in with Claude Code..." = "Faça login com Claude Code...";
+"Timed out waiting for Cursor account switch. %@" = "Tempo limite esgotado aguardando a troca de conta do Cursor. %@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "Tempo limite esgotado aguardando a troca de conta do Cursor. %@ Último erro: %@";
+"Use Account" = "Usar conta";

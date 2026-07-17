@@ -521,6 +521,8 @@
 "primary_api_key_limit" = "기본 (API 키 한도)";
 "menu_bar_style_title" = "메뉴 막대 스타일";
 "menu_bar_style_subtitle" = "메뉴 막대 항목의 표시 방식을 선택합니다.";
+"menu_bar_inactive_display_contrast_title" = "비활성 디스플레이에서 가시성 향상";
+"menu_bar_inactive_display_contrast_subtitle" = "고대비 렌더링을 사용하여 다른 디스플레이에서도 아이콘과 지표를 읽기 쉽게 유지합니다.";
 "menu_bar_style_critters" = "크리터";
 "menu_bar_style_bars" = "미터 막대";
 "menu_bar_style_icon_percent" = "아이콘 및 백분율";
@@ -683,6 +685,9 @@
 "not_found" = "찾을 수 없음";
 "cost_header_estimated" = "비용(추정)";
 "cost_estimate_hint" = "로컬 로그에서 추정 · 실제 청구액과 다를 수 있음";
+"codex_api_estimate_header" = "API 등가 추정치";
+"codex_api_estimate_hint" = "로컬 사용량 × 공개 API 가격 · 구독 청구서나 플랜 가치가 아닙니다";
+"codex_api_estimate_not_billed" = "구독 청구서나 플랜 가치가 아닙니다";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "AI Assistant가 있는 JetBrains IDE를 찾지 못했습니다. JetBrains IDE를 설치하고 AI Assistant를 사용하세요.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "OpenRouter API 토큰이 구성되지 않았습니다. OPENROUTER_API_KEY 환경 변수를 설정하거나 설정에서 구성하세요.";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "z.ai API 토큰을 찾을 수 없습니다. ~/.codexbar/config.json에 apiKey를 설정하거나 Z_AI_API_KEY를 설정하세요.";
@@ -1149,3 +1154,15 @@
 "Show Codex Spark usage" = "Codex Spark 사용량 표시";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "메뉴와 공급자 미리보기에 Codex Spark 할당량 행을 표시합니다. 표시 설정에서 ‘크레딧 + 추가 사용량 표시’를 활성화해야 합니다.";
 "Scroll to see more models" = "스크롤하여 더 많은 모델 보기";
+
+"%@: %@" = "%@: %@";
+"Alternatively, set a custom path in Settings." = "또는 설정에서 사용자 정의 경로를 설정하세요.";
+"Choose a supported browser so CodexBar can read the matching account." = "CodexBar가 일치하는 계정을 읽을 수 있도록 지원되는 브라우저를 선택하세요.";
+"Choose Cursor account" = "Cursor 계정 선택";
+"Choose which Cursor account CodexBar should use." = "CodexBar에서 사용할 Cursor 계정을 선택하세요.";
+"Finish switching to a different Cursor account in your browser, then try again." = "브라우저에서 다른 Cursor 계정으로 전환을 완료한 후 다시 시도하세요.";
+"Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar." = "AI Assistant가 활성화된 JetBrains IDE를 설치한 다음 CodexBar를 새로 고치세요.";
+"Sign in with Claude Code..." = "Claude Code로 로그인하세요...";
+"Timed out waiting for Cursor account switch. %@" = "Cursor 계정 전환을 기다리는 동안 시간이 초과되었습니다. %@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "Cursor 계정 전환을 기다리는 동안 시간이 초과되었습니다. %@ 마지막 오류: %@";
+"Use Account" = "계정 사용";

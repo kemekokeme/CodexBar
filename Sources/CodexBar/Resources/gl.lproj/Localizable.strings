@@ -510,6 +510,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Estilo da barra de menús";
 "menu_bar_style_subtitle" = "Como se debuxa o elemento da barra de menús.";
+"menu_bar_inactive_display_contrast_title" = "Mellorar a visibilidade nas pantallas inactivas";
+"menu_bar_inactive_display_contrast_subtitle" = "Usa unha representación de alto contraste para manter lexibles a icona e a métrica nas outras pantallas.";
 "menu_bar_style_critters" = "Animaliños";
 "menu_bar_style_bars" = "Barras de medición";
 "menu_bar_style_icon_percent" = "Icona e porcentaxe";
@@ -689,6 +691,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "Custo (estimado)";
 "cost_estimate_hint" = "Estimado a partir de rexistros locais · pode diferir da túa factura";
+"codex_api_estimate_header" = "Estimación equivalente á API";
+"codex_api_estimate_hint" = "Uso local × prezos públicos da API · non é unha factura de subscrición nin o valor dun plan";
+"codex_api_estimate_not_billed" = "non é unha factura de subscrición nin o valor dun plan";
 
 /* Popup panels */
 "No usage configured." = "Non hai ningún uso configurado.";

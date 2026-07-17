@@ -537,6 +537,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "سبک نوار منو";
 "menu_bar_style_subtitle" = "نحوه نمایش آیتم نوار منو.";
+"menu_bar_inactive_display_contrast_title" = "بهبود خوانایی در نمایشگرهای غیرفعال";
+"menu_bar_inactive_display_contrast_subtitle" = "از نمایش با کنتراست بالا استفاده می‌کند تا نماد و معیار در نمایشگرهای دیگر خوانا بمانند.";
 "menu_bar_style_critters" = "موجودات";
 "menu_bar_style_bars" = "نوارهای اندازه‌گیری";
 "menu_bar_style_icon_percent" = "آیکون و درصد";
@@ -717,6 +719,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "هزینه (تخمینی)";
 "cost_estimate_hint" = "برآورد شده از چوب های محلی · ممکن است با صورتحساب شما متفاوت باشد";
+"codex_api_estimate_header" = "برآورد معادل API";
+"codex_api_estimate_hint" = "استفاده محلی × قیمت‌های عمومی API · نه صورتحساب اشتراک است و نه ارزش طرح";
+"codex_api_estimate_not_billed" = "نه صورتحساب اشتراک است و نه ارزش طرح";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "هیچ JetBrains IDE ای با AI Assistant شناسایی نشد. یک JetBrains IDE نصب کنید و AI Assistant را فعال کنید.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "OpenRouter API توکن پیکربندی نشده است. متغیر محیطی OPENROUTER_API_KEY تنظیم کنید یا در تنظیمات پیکربندی کنید.";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "z.ai API توکن پیدا نشد. apiKey را در ~/.codexbar/config.json یا Z_AI_API_KEY تنظیم کنید.";

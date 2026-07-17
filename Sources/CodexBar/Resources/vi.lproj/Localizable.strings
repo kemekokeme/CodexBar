@@ -528,6 +528,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Kiểu thanh menu";
 "menu_bar_style_subtitle" = "Cách hiển thị mục trên thanh menu.";
+"menu_bar_inactive_display_contrast_title" = "Cải thiện khả năng hiển thị trên màn hình không hoạt động";
+"menu_bar_inactive_display_contrast_subtitle" = "Sử dụng hiển thị tương phản cao để biểu tượng và chỉ số vẫn dễ đọc trên các màn hình khác.";
 "menu_bar_style_critters" = "Sinh vật";
 "menu_bar_style_bars" = "Thanh đo";
 "menu_bar_style_icon_percent" = "Biểu tượng & phần trăm";
@@ -708,6 +710,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "Chi phí (ước tính)";
 "cost_estimate_hint" = "Ước tính từ nhật ký cục bộ · có thể khác với hóa đơn của bạn";
+"codex_api_estimate_header" = "Ước tính tương đương API";
+"codex_api_estimate_hint" = "Mức dùng cục bộ × giá API công khai · không phải hóa đơn đăng ký hoặc giá trị gói";
+"codex_api_estimate_not_billed" = "không phải hóa đơn đăng ký hoặc giá trị gói";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "Không phát hiện thấy IDE JetBrains nào có Trợ lý AI. Cài đặt JetBrains IDE và bật Trợ lý AI.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "OpenRouter API token chưa được định cấu hình. Đặt biến môi trường OPENROUTER_API_KEY hoặc định cấu hình trong Cài đặt .";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "không tìm thấy z.ai API token. Đặt apiKey trong ~/.codexbar/config.json hoặc Z_AI_API_KEY.";
@@ -1181,3 +1186,16 @@
 "Show Codex Spark usage" = "Hiển thị mức sử dụng Codex Spark";
 "Shows Codex Spark quota rows in the menu and provider preview. Requires optional credits and extra usage in Display settings." = "Hiển thị các hàng hạn mức Codex Spark trong menu và bản xem trước của nhà cung cấp. Yêu cầu bật “Hiển thị tín dụng + mức sử dụng bổ sung” trong phần cài đặt Hiển thị.";
 "Scroll to see more models" = "Cuộn để xem thêm mô hình";
+
+"%@: %@" = "%@: %@";
+"Alternatively, set a custom path in Settings." = "Ngoài ra, hãy đặt đường dẫn tùy chỉnh trong Cài đặt.";
+"Choose a supported browser so CodexBar can read the matching account." = "Chọn một trình duyệt được hỗ trợ để CodexBar có thể đọc tài khoản phù hợp.";
+"Choose Cursor account" = "Chọn tài khoản Cursor";
+"Choose which Cursor account CodexBar should use." = "Chọn tài khoản Cursor mà CodexBar nên sử dụng.";
+"Finish switching to a different Cursor account in your browser, then try again." = "Hoàn tất việc chuyển sang tài khoản Cursor khác trong trình duyệt, sau đó thử lại.";
+"Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar." = "Cài đặt JetBrains IDE có bật AI Assistant, sau đó làm mới CodexBar.";
+"Request quota: %@ / %@" = "Hạn mức yêu cầu: %@ / %@";
+"Sign in with Claude Code..." = "Đăng nhập bằng Claude Code...";
+"Timed out waiting for Cursor account switch. %@" = "Đã hết thời gian chờ chuyển đổi tài khoản Cursor. %@";
+"Timed out waiting for Cursor account switch. %@ Last error: %@" = "Đã hết thời gian chờ chuyển đổi tài khoản Cursor. %@ Lỗi gần nhất: %@";
+"Use Account" = "Sử dụng tài khoản";

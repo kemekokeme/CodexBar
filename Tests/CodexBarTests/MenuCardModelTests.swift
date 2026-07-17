@@ -1050,7 +1050,10 @@ struct MenuCardModelTests {
 
         #expect(model.tokenUsage?.monthLine.contains("456") == true)
         #expect(model.tokenUsage?.monthLine.contains("tokens") == true)
-        #expect(model.tokenUsage?.hintLine == "Estimated from local Codex logs for the selected account.")
+        #expect(model.tokenUsage?.hintLine ==
+            "Estimated from local Codex logs for the selected account.\n" +
+            "not a subscription bill or plan value\n" +
+            "Local usage × public API prices · not a subscription bill or plan value")
     }
 
     @Test

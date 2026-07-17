@@ -537,6 +537,8 @@
 /* Display Pane */
 "menu_bar_style_title" = "Menu bar style";
 "menu_bar_style_subtitle" = "How the menu bar item is drawn.";
+"menu_bar_inactive_display_contrast_title" = "Improve visibility on inactive displays";
+"menu_bar_inactive_display_contrast_subtitle" = "Use high-contrast rendering to keep the icon and metric readable on other displays.";
 "menu_bar_style_critters" = "Critters";
 "menu_bar_style_bars" = "Meter bars";
 "menu_bar_style_icon_percent" = "Icon & percent";
@@ -717,6 +719,9 @@
 /* Cost estimation */
 "cost_header_estimated" = "Cost (estimated)";
 "cost_estimate_hint" = "Estimated from local logs · may differ from your bill";
+"codex_api_estimate_header" = "API-equivalent estimate";
+"codex_api_estimate_hint" = "Local usage × public API prices · not a subscription bill or plan value";
+"codex_api_estimate_not_billed" = "not a subscription bill or plan value";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings.";
 "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY." = "z.ai API token not found. Set apiKey in ~/.codexbar/config.json or Z_AI_API_KEY.";

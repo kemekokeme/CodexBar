@@ -423,8 +423,14 @@ struct ProviderMetricsInlineView: View {
             }
 
             if let tokenUsage = self.model.tokenUsage {
-                ProviderMetricInlineTextRow(title: L("Cost"), value: tokenUsage.sessionLine)
+                let isCodexEstimate = self.model.provider == .codex
+                ProviderMetricInlineTextRow(
+                    title: isCodexEstimate ? L("codex_api_estimate_header") : L("Cost"),
+                    value: tokenUsage.sessionLine)
                 ProviderMetricInlineTextRow(title: "", value: tokenUsage.monthLine)
+                if isCodexEstimate, let hint = tokenUsage.hintLine, !hint.isEmpty {
+                    ProviderMetricInlineTextRow(title: "", value: hint)
+                }
             }
         }
     }
