@@ -3,53 +3,65 @@ import Commander
 import Foundation
 
 extension CodexBarCLI {
-    static func runCookieRefresh(_ values: ParsedValues) {
+    static func runCookieRefresh(_ values: ParsedValues) async {
         let output = CLIOutputPreferences.from(values: values)
         let rawProvider = values.options["provider"]?.last
         let refreshAll = values.flags.contains("all")
 
-        guard rawProvider != nil || refreshAll else {
+        guard (rawProvider != nil) != refreshAll else {
             Self.exit(
                 code: .failure,
-                message: "Specify --provider <name> or --all.",
+                message: "Specify exactly one of --provider <name> or --all.",
                 output: output,
                 kind: .args)
         }
 
         #if os(macOS)
-        let browserDetection = BrowserDetection()
-
-        if refreshAll {
-            // Only refresh providers with dedicated browser-cookie importers
-            let supported: [UsageProvider] = [.opencodego, .opencode]
-            var results: [CookieRefreshResult] = []
-            for provider in supported {
-                let result = Self.refreshCookie(provider: provider, browserDetection: browserDetection)
-                results.append(result)
-            }
-            Self.printCookieRefreshResults(results, format: output.format, pretty: output.pretty)
-            let hasErrors = results.contains(where: { $0.error != nil })
-            Self.exit(code: hasErrors ? .failure : .success, output: output, kind: .runtime)
-        } else if let rawProvider {
-            guard let provider = ProviderDescriptorRegistry.cliNameMap[rawProvider.lowercased()] else {
-                Self.exit(
-                    code: .failure,
-                    message: "Unknown provider: \(rawProvider)",
-                    output: output,
-                    kind: .args)
-            }
-            guard let descriptor = ProviderDescriptorRegistry.all.first(where: { $0.id == provider }),
-                  descriptor.metadata.browserCookieOrder != nil else {
-                Self.exit(
-                    code: .failure,
-                    message: "\(rawProvider) does not use browser cookie authentication.",
-                    output: output,
-                    kind: .args)
-            }
-            let result = Self.refreshCookie(provider: provider, browserDetection: browserDetection)
-            Self.printCookieRefreshResults([result], format: output.format, pretty: output.pretty)
-            Self.exit(code: result.error != nil ? .failure : .success, output: output, kind: .runtime)
+        let targets: [ProviderDescriptor]
+        do {
+            targets = try Self.cookieRefreshTargets(rawProvider: rawProvider, refreshAll: refreshAll)
+        } catch {
+            Self.exit(
+                code: .failure,
+                message: error.localizedDescription,
+                output: output,
+                kind: .args)
         }
+
+        let config = Self.loadConfig(output: output)
+        let tokenContext: TokenAccountCLIContext
+        do {
+            tokenContext = try TokenAccountCLIContext(
+                selection: TokenAccountCLISelection(label: nil, index: nil, allAccounts: false),
+                config: config,
+                verbose: values.flags.contains("verbose"))
+        } catch {
+            Self.exit(
+                code: .failure,
+                message: "Could not prepare provider settings.",
+                output: output,
+                kind: .config)
+        }
+
+        let browserDetection = BrowserDetection()
+        let allowKeychainPrompt = values.flags.contains("allowKeychainPrompt")
+        let results = await Self.performCookieRefreshes(
+            targets: targets,
+            allowKeychainPrompt: allowKeychainPrompt,
+            preflight: { descriptor in
+                Self.cookieRefreshSkipResult(descriptor: descriptor, config: config)
+            },
+            operation: { descriptor in
+                await Self.refreshCookie(
+                    descriptor: descriptor,
+                    config: config,
+                    tokenContext: tokenContext,
+                    browserDetection: browserDetection)
+            })
+
+        Self.printCookieRefreshResults(results, output: output)
+        let hasErrors = results.contains(where: \.isFailure)
+        Self.exit(code: hasErrors ? .failure : .success, output: output, kind: .runtime)
         #else
         Self.exit(
             code: .failure,
@@ -60,83 +72,229 @@ extension CodexBarCLI {
     }
 
     #if os(macOS)
-    private static func refreshCookie(provider: UsageProvider, browserDetection: BrowserDetection) -> CookieRefreshResult {
-        let clearSummary = CookieHeaderCache.clearAllScopesDetailed(provider: provider)
-        if clearSummary.failedCount > 0, clearSummary.clearedCount == 0 {
-            return CookieRefreshResult(
-                provider: provider.rawValue,
-                status: "failed",
-                source: nil,
-                error: "Failed to clear cookie cache.")
+    static func cookieRefreshTargets(
+        rawProvider: String?,
+        refreshAll: Bool,
+        descriptors: [ProviderDescriptor] = ProviderDescriptorRegistry.all) throws -> [ProviderDescriptor]
+    {
+        let supported = descriptors.filter { descriptor in
+            descriptor.metadata.browserCookieOrder != nil && descriptor.fetchPlan.sourceModes.contains(.web)
+        }
+        if refreshAll {
+            guard !supported.isEmpty else { throw CookieRefreshCommandError.noSupportedProviders }
+            return supported
         }
 
-        do {
-            let session = try Self.importSession(for: provider, browserDetection: browserDetection)
-            CookieHeaderCache.store(
-                provider: provider,
-                cookieHeader: session.cookieHeader,
-                sourceLabel: session.sourceLabel)
-            return CookieRefreshResult(
-                provider: provider.rawValue,
-                status: "refreshed",
-                source: session.sourceLabel,
-                error: nil)
-        } catch {
-            let detail = error.localizedDescription
-            return CookieRefreshResult(
-                provider: provider.rawValue,
-                status: "cleared",
-                source: nil,
-                error: "Cache cleared. \(detail) CodexBar will re-import from your browser on next refresh (or click the menu bar). Verify with: security find-generic-password -a \"cookie.\(provider.rawValue)\" -s \"com.steipete.codexbar.cache\" -w | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d[\"storedAt\"])'")
+        guard let rawProvider,
+              let provider = ProviderDescriptorRegistry.cliNameMap[rawProvider.lowercased()]
+        else {
+            throw CookieRefreshCommandError.unknownProvider(rawProvider ?? "")
         }
+        guard let descriptor = supported.first(where: { $0.id == provider }) else {
+            throw CookieRefreshCommandError.unsupportedProvider(rawProvider)
+        }
+        return [descriptor]
     }
 
-    private static func importSession(for provider: UsageProvider, browserDetection: BrowserDetection) throws -> OpenCodeCookieImporter.SessionInfo {
-        switch provider {
-        case .opencodego, .opencode:
-            return try OpenCodeCookieImporter.importSession(
-                browserDetection: browserDetection,
-                preferredBrowsers: [])
-        default:
-            throw CookieRefreshError.noImporterForProvider(provider.rawValue)
-        }
-    }
+    static func performCookieRefreshes(
+        targets: [ProviderDescriptor],
+        allowKeychainPrompt: Bool,
+        preflight: (ProviderDescriptor) -> CookieRefreshResult? = { _ in nil },
+        operation: (ProviderDescriptor) async -> CookieRefreshResult) async -> [CookieRefreshResult]
+    {
+        var results: [CookieRefreshResult] = []
+        results.reserveCapacity(targets.count)
+        for descriptor in targets {
+            if let result = preflight(descriptor) {
+                results.append(result)
+                continue
+            }
 
-    private static func printCookieRefreshResults(_ results: [CookieRefreshResult], format: OutputFormat, pretty: Bool) {
-        switch format {
-        case .text:
-            for result in results {
-                if let error = result.error {
-                    if result.status == "cleared" {
-                        print("\(result.provider): ⚠️ cache cleared, re-import pending — \(error)")
-                    } else {
-                        print("\(result.provider): ❌ \(error)")
+            let browsers = descriptor.metadata.browserCookieOrder ?? []
+            let needsAcknowledgement = BrowserCookieAccessGate.requiresKeychainPromptAcknowledgement(for: browsers)
+            guard !needsAcknowledgement || allowKeychainPrompt else {
+                results.append(CookieRefreshResult(
+                    provider: descriptor.cli.name,
+                    status: .blocked,
+                    message: Self.keychainPromptAcknowledgementHint))
+                continue
+            }
+
+            let result: CookieRefreshResult = if allowKeychainPrompt {
+                await BrowserCookieAccessGate.withExplicitRetry {
+                    await ProviderInteractionContext.$current.withValue(.userInitiated) {
+                        await operation(descriptor)
                     }
-                } else if let source = result.source {
-                    print("\(result.provider): ✅ refreshed from \(source)")
+                }
+            } else {
+                await ProviderInteractionContext.$current.withValue(.userInitiated) {
+                    await operation(descriptor)
                 }
             }
+            results.append(result)
+        }
+        return results
+    }
+
+    static func cookieRefreshFailure(provider: UsageProvider, error _: any Error) -> CookieRefreshResult {
+        let descriptor = ProviderDescriptorRegistry.descriptor(for: provider)
+        let promptCapableBrowsers = (descriptor.metadata.browserCookieOrder ?? [])
+            .filter { BrowserCookieAccessGate.requiresKeychainPromptAcknowledgement(for: [$0]) }
+        if let browser = promptCapableBrowsers.first, KeychainAccessGate.isDisabled {
+            return CookieRefreshResult(
+                provider: descriptor.cli.name,
+                status: .failed,
+                message: "\(browser.displayName) cookie decryption is disabled in CodexBar; " +
+                    "enable Keychain access and refresh.")
+        }
+        if let browser = promptCapableBrowsers.first(where: { BrowserCookieAccessGate.hasActiveDenial(for: $0) }) {
+            return CookieRefreshResult(
+                provider: descriptor.cli.name,
+                status: .failed,
+                message: "\(browser.displayName) cookie decryption was declined in Keychain; " +
+                    "retry with --allow-keychain-prompt.")
+        }
+        return CookieRefreshResult(
+            provider: descriptor.cli.name,
+            status: .failed,
+            message: self.browserCookieAccessFailureHint)
+    }
+
+    static func cookieRefreshText(_ results: [CookieRefreshResult]) -> String {
+        results.map { result in
+            let marker = switch result.status {
+            case .refreshed: "✅"
+            case .skipped: "↷"
+            case .blocked: "⚠️"
+            case .failed: "❌"
+            }
+            return "\(result.provider): \(marker) \(result.message)"
+        }.joined(separator: "\n")
+    }
+
+    private static let keychainPromptAcknowledgementHint =
+        "Browser cookie decryption may open a macOS Keychain prompt. " +
+        "Retry interactively with --allow-keychain-prompt to acknowledge it."
+
+    private static let browserCookieAccessFailureHint =
+        "No browser session cookie was refreshed. Sign in in a configured browser and retry. " +
+        "If Keychain access was declined, CodexBar keeps the six-hour denial cooldown; " +
+        "use --allow-keychain-prompt only for an explicit interactive retry."
+
+    private static func refreshCookie(
+        descriptor: ProviderDescriptor,
+        config: CodexBarConfig,
+        tokenContext: TokenAccountCLIContext,
+        browserDetection: BrowserDetection) async -> CookieRefreshResult
+    {
+        let provider = descriptor.id
+        if let result = Self.cookieRefreshSkipResult(descriptor: descriptor, config: config) {
+            return result
+        }
+
+        let clearSummary = CookieHeaderCache.clearAllScopesDetailed(provider: provider)
+        guard clearSummary.failedCount == 0 else {
+            return CookieRefreshResult(
+                provider: descriptor.cli.name,
+                status: .failed,
+                message: "Cookie cache cleanup failed; no browser import was attempted.")
+        }
+
+        let environment = tokenContext.environment(
+            base: ProcessInfo.processInfo.environment,
+            provider: provider,
+            account: nil)
+        let context = ProviderFetchContext(
+            runtime: .cli,
+            sourceMode: .web,
+            includeCredits: false,
+            includeOptionalUsage: false,
+            webTimeout: 60,
+            webDebugDumpHTML: false,
+            verbose: false,
+            env: environment,
+            settings: tokenContext.settingsSnapshot(for: provider, account: nil),
+            fetcher: tokenContext.fetcher(base: UsageFetcher(), provider: provider, env: environment),
+            claudeFetcher: ClaudeUsageFetcher(browserDetection: browserDetection),
+            browserDetection: browserDetection)
+        let outcome = await descriptor.fetchOutcome(context: context)
+        switch outcome.result {
+        case .success:
+            return CookieRefreshResult(
+                provider: descriptor.cli.name,
+                status: .refreshed,
+                message: "Browser cookie refreshed.")
+        case let .failure(error):
+            return Self.cookieRefreshFailure(provider: provider, error: error)
+        }
+    }
+
+    private static func cookieRefreshSkipResult(
+        descriptor: ProviderDescriptor,
+        config: CodexBarConfig) -> CookieRefreshResult?
+    {
+        switch config.providerConfig(for: descriptor.id)?.cookieSource ?? .auto {
+        case .manual:
+            CookieRefreshResult(
+                provider: descriptor.cli.name,
+                status: .skipped,
+                message: "Browser refresh skipped because this provider uses a manual cookie.")
+        case .off:
+            CookieRefreshResult(
+                provider: descriptor.cli.name,
+                status: .skipped,
+                message: "Browser refresh skipped because browser cookies are disabled for this provider.")
+        case .auto:
+            nil
+        }
+    }
+
+    private static func printCookieRefreshResults(
+        _ results: [CookieRefreshResult],
+        output: CLIOutputPreferences)
+    {
+        switch output.format {
+        case .text:
+            if !output.jsonOnly {
+                print(self.cookieRefreshText(results))
+            }
         case .json:
-            Self.printJSON(results, pretty: pretty)
+            printJSON(results, pretty: output.pretty)
         }
     }
     #endif
 }
 
-private struct CookieRefreshResult: Encodable {
-    let provider: String
-    let status: String
-    let source: String?
-    let error: String?
+enum CookieRefreshStatus: String, Encodable {
+    case refreshed
+    case skipped
+    case blocked
+    case failed
 }
 
-private enum CookieRefreshError: LocalizedError {
-    case noImporterForProvider(String)
+struct CookieRefreshResult: Encodable {
+    let provider: String
+    let status: CookieRefreshStatus
+    let message: String
+
+    var isFailure: Bool {
+        self.status == .blocked || self.status == .failed
+    }
+}
+
+private enum CookieRefreshCommandError: LocalizedError {
+    case noSupportedProviders
+    case unknownProvider(String)
+    case unsupportedProvider(String)
 
     var errorDescription: String? {
         switch self {
-        case let .noImporterForProvider(provider):
-            "No browser cookie importer available for \(provider). Cache cleared; next fetch will re-import."
+        case .noSupportedProviders:
+            "No providers support browser cookie refresh on this platform."
+        case let .unknownProvider(provider):
+            "Unknown provider: \(provider)"
+        case let .unsupportedProvider(provider):
+            "\(provider) does not support browser cookie refresh."
         }
     }
 }
@@ -158,11 +316,16 @@ struct CookieOptions: CommanderParsable {
     var pretty: Bool = false
 
     @Option(name: .long("format"), help: "Output format: text | json")
-    var format: String?
+    var format: OutputFormat?
 
-    @Flag(name: .long("all"), help: "Refresh cookies for OpenCode and OpenCode Go providers")
+    @Flag(name: .long("all"), help: "Refresh every browser-cookie provider")
     var all: Bool = false
 
-    @Option(name: .long("provider"), help: "Refresh cookie for a specific provider (e.g. opencodego)")
+    @Option(name: .long("provider"), help: "Refresh a specific browser-cookie provider")
     var provider: String?
+
+    @Flag(
+        name: .long("allow-keychain-prompt"),
+        help: "Acknowledge that Chromium cookie decryption may open a macOS Keychain prompt")
+    var allowKeychainPrompt: Bool = false
 }

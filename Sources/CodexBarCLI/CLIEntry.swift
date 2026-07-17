@@ -39,18 +39,8 @@ enum CodexBarCLI {
             let invocation = try program.resolve(argv: argv)
             Self.bootstrapLogging(path: invocation.path, values: invocation.parsedValues)
             switch invocation.path {
-            case ["cards"]:
-                let signalMonitor = CLITerminationSignalMonitor { signalNumber in
-                    CLITerminationSignalMonitor.terminateActiveHelpersAndReraise(signalNumber)
-                }
-                defer { signalMonitor.cancel() }
-                await self.runCards(invocation.parsedValues)
-            case ["usage"]:
-                let signalMonitor = CLITerminationSignalMonitor { signalNumber in
-                    CLITerminationSignalMonitor.terminateActiveHelpersAndReraise(signalNumber)
-                }
-                defer { signalMonitor.cancel() }
-                await self.runUsage(invocation.parsedValues)
+            case ["cards"], ["usage"]:
+                await self.runUsageDisplay(path: invocation.path, values: invocation.parsedValues)
             case ["cost"]:
                 await self.runCost(invocation.parsedValues)
             case ["sessions", "list"]:
@@ -76,7 +66,7 @@ enum CodexBarCLI {
             case ["cache", "clear"]:
                 self.runCacheClear(invocation.parsedValues)
             case ["cookie", "refresh"]:
-                self.runCookieRefresh(invocation.parsedValues)
+                await self.runCookieRefresh(invocation.parsedValues)
             case ["diagnose"]:
                 let signalMonitor = CLITerminationSignalMonitor { signalNumber in
                     CLITerminationSignalMonitor.terminateActiveHelpersAndReraise(signalNumber)
@@ -94,6 +84,19 @@ enum CodexBarCLI {
             Self.exit(code: .failure, message: error.description, output: outputPreferences, kind: .args)
         } catch {
             Self.exit(code: .failure, message: error.localizedDescription, output: outputPreferences, kind: .runtime)
+        }
+    }
+
+    private static func runUsageDisplay(path: [String], values: ParsedValues) async {
+        let signalMonitor = CLITerminationSignalMonitor { signalNumber in
+            CLITerminationSignalMonitor.terminateActiveHelpersAndReraise(signalNumber)
+        }
+        defer { signalMonitor.cancel() }
+        switch path {
+        case ["cards"]:
+            await self.runCards(values)
+        default:
+            await self.runUsage(values)
         }
     }
 
@@ -230,25 +233,30 @@ enum CodexBarCLI {
                         signature: cacheSignature),
                 ],
                 defaultSubcommandName: "clear"),
-            CommandDescriptor(
-                name: "cookie",
-                abstract: "Cookie management",
-                discussion: nil,
-                signature: CommandSignature(),
-                subcommands: [
-                    CommandDescriptor(
-                        name: "refresh",
-                        abstract: "Re-import browser cookie for a provider",
-                        discussion: "Clears the cached cookie from Keychain and re-imports the current browser session for the specified provider.",
-                        signature: CommandSignature.describe(CookieOptions())),
-                ],
-                defaultSubcommandName: "refresh"),
+            Self.cookieCommandDescriptor(),
             CommandDescriptor(
                 name: "diagnose",
                 abstract: "Run provider diagnostic and emit safe JSON export",
                 discussion: nil,
                 signature: diagnoseSignature),
         ]
+    }
+
+    private static func cookieCommandDescriptor() -> CommandDescriptor {
+        CommandDescriptor(
+            name: "cookie",
+            abstract: "Cookie management",
+            discussion: nil,
+            signature: CommandSignature(),
+            subcommands: [
+                CommandDescriptor(
+                    name: "refresh",
+                    abstract: "Re-import browser cookie for a provider",
+                    discussion: "Clears the provider cookie cache and re-imports through its browser-backed " +
+                        "web strategy. Prompt-capable browsers require --allow-keychain-prompt.",
+                    signature: CommandSignature.describe(CookieOptions())),
+            ],
+            defaultSubcommandName: "refresh")
     }
 
     // MARK: - Helpers

@@ -250,7 +250,6 @@ struct ProviderSettingsPickerDescriptor: Identifiable {
     let isEnabled: (() -> Bool)?
     let onChange: ((_ selection: String) async -> Void)?
     let trailingText: (() -> String?)?
-    let trailingActions: [ProviderSettingsActionDescriptor]
 
     init(
         id: String,
@@ -263,8 +262,7 @@ struct ProviderSettingsPickerDescriptor: Identifiable {
         isVisible: (() -> Bool)?,
         isEnabled: (() -> Bool)? = nil,
         onChange: ((_ selection: String) async -> Void)?,
-        trailingText: (() -> String?)? = nil,
-        trailingActions: [ProviderSettingsActionDescriptor] = [])
+        trailingText: (() -> String?)? = nil)
     {
         self.id = id
         self.title = title
@@ -277,7 +275,6 @@ struct ProviderSettingsPickerDescriptor: Identifiable {
         self.isEnabled = isEnabled
         self.onChange = onChange
         self.trailingText = trailingText
-        self.trailingActions = trailingActions
     }
 }
 

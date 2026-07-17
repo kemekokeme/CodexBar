@@ -88,6 +88,11 @@ See `docs/configuration.md` for the schema.
   - `--cookies --provider <id>` removes browser-cookie cache entries for that provider, including managed Codex account scopes.
   - `--cost` removes local cost-usage scan caches.
   - `--all` clears both cookies and cost caches. `--provider` is cookie-only and cannot be combined with `--cost` or `--all`.
+- `codexbar cookie refresh` clears and immediately re-imports browser cookies through the provider's web strategy.
+  - Choose exactly one of `--provider <id>` or `--all`; provider support comes from shared browser-cookie metadata rather than a fixed CLI list.
+  - Prompt-capable Chromium imports require `--allow-keychain-prompt`. Without it, the command fails before cache mutation with an interactive-retry hint.
+  - A six-hour Keychain-denial cooldown is bypassed only by that explicit acknowledgment flag. Output never includes cookie values.
+  - Providers configured for Manual or Off cookie sources are skipped.
 - `--provider <id|both|all>` (default: enabled providers in config; falls back to defaults when missing).
   - Provider IDs live in the config file (see `docs/configuration.md`).
   - With three or more providers enabled, the default stays scoped to enabled providers; use `--provider all` to query
@@ -186,6 +191,7 @@ codexbar config enable --provider grok
 codexbar cache clear --cookies
 codexbar cache clear --cookies --provider claude
 codexbar cache clear --all --format json --pretty
+codexbar cookie refresh --provider opencodego --allow-keychain-prompt
 ```
 
 ### Sample output (text)

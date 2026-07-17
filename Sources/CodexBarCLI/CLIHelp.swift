@@ -307,24 +307,24 @@ extension CodexBarCLI {
         CodexBar \(version)
 
         Usage:
-          codexbar cookie refresh --provider <name>
-                                 [--all]
+          codexbar cookie refresh <--provider <name>|--all>
+                                 [--allow-keychain-prompt]
                                  [--format text|json]
                                  [--json]
                                  [--json-only]
                                  [--pretty]
 
         Description:
-          Re-import browser cookies from your current browser session. Clears the
-          cached cookie from Keychain and attempts to import a fresh session cookie
-          from Chrome. If the import succeeds the new cookie is stored immediately;
-          if not (e.g. running outside the signed app bundle), the cache is still
-          cleared and CodexBar will import the cookie on its next menu-bar refresh.
+          Re-import browser cookies using each provider's configured browser order.
+          Providers that may decrypt Chromium cookies fail before clearing the cache
+          unless --allow-keychain-prompt explicitly acknowledges a possible macOS
+          Keychain prompt. A prior denial keeps its six-hour cooldown unless that
+          explicit interactive retry flag is supplied. Cookie values are never shown.
 
         Examples:
-          codexbar cookie refresh --provider opencodego
-          codexbar cookie refresh --all
-          codexbar cookie refresh --provider opencodego --format json --pretty
+          codexbar cookie refresh --provider opencodego --allow-keychain-prompt
+          codexbar cookie refresh --all --allow-keychain-prompt
+          codexbar cookie refresh --provider opencodego --allow-keychain-prompt --format json --pretty
         """
     }
 
@@ -368,7 +368,7 @@ extension CodexBarCLI {
           codexbar hooks <list|enable|disable> [--format text|json] [--pretty]
           codexbar hooks test <event> --provider <name>
           codexbar cache clear <--cookies|--cost|--all> [--provider <name>]
-          codexbar cookie refresh --provider <name> [--all]
+          codexbar cookie refresh <--provider <name>|--all> [--allow-keychain-prompt]
           codexbar diagnose --provider <name|all> --format json [--redact] [--output <path>] [--pretty]
 
         Global flags:
@@ -394,7 +394,7 @@ extension CodexBarCLI {
           codexbar config set-api-key --provider elevenlabs --stdin
           codexbar hooks test quota_reached --provider codex
           codexbar cache clear --cookies
-          codexbar cookie refresh --provider opencodego
+          codexbar cookie refresh --provider opencodego --allow-keychain-prompt
           codexbar diagnose --provider minimax --format json --redact --output diagnostic.json
           codexbar diagnose --provider minimax --format json --pretty
           codexbar diagnose --provider all --format json
