@@ -27,8 +27,15 @@ struct CursorUsageEventsPage: Decodable, Sendable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.totalUsageEventsCount = CursorEventNumber.int64(container, .totalUsageEventsCount)
+        let decodedCount = CursorEventNumber.int64(container, .totalUsageEventsCount)
             .flatMap(Int.init(exactly:))
+        if let decodedCount, decodedCount < 0 {
+            throw DecodingError.dataCorruptedError(
+                forKey: .totalUsageEventsCount,
+                in: container,
+                debugDescription: "Cursor usage event count cannot be negative")
+        }
+        self.totalUsageEventsCount = decodedCount
         self.usageEventsDisplay = try container.decode([CursorUsageEvent].self, forKey: .usageEventsDisplay)
     }
 }
@@ -177,8 +184,8 @@ struct CursorEventTokenUsage: Decodable, Sendable, Hashable {
 ///
 /// `daily` carries the API-rate per-day, per-model breakdown (vendor list price from
 /// `tokenUsage.totalCents`). `meteredCostUSD` is what Cursor's plan actually deducts over the
-/// same window (sum of each event's `chargedCents`); it is `nil` when no event reported a
-/// metered amount, so callers can tell "zero" apart from "unknown".
+/// same window (sum of each event's `chargedCents`); it is `nil` when any valid event omits
+/// its metered amount, so callers never mistake a partial sum for the complete window total.
 struct CursorCostFetchResult: Sendable {
     let daily: CostUsageDailyReport
     let meteredCostUSD: Double?
@@ -325,8 +332,10 @@ struct CursorUsageEventsFetcher: Sendable {
             }
         }
         let rawEvents = pages.flatMap(\.self)
-        let authoritativeCountReached = expectedTotal.map { rawEvents.count >= $0 } ?? false
-        if !completed, !authoritativeCountReached {
+        // A full final page at the safety cap is ambiguous even when its raw count reaches the
+        // reported total: Cursor can repeat rows at page boundaries. Require an empty/short page
+        // to prove completion before publishing a window total.
+        if !completed {
             throw CostUsageError.cursorPaginationIncomplete(expected: expectedTotal, received: rawEvents.count)
         }
         guard let expectedTotal else { return rawEvents }
@@ -439,19 +448,20 @@ struct CursorUsageEventsFetcher: Sendable {
 
     /// Cursor-metered spend in USD: the sum of each event's `chargedCents` (what the plan
     /// deducts), distinct from the API-rate `tokenUsage.totalCents`. Returns `nil` when no
-    /// event carried a `chargedCents` value so callers can tell "zero" apart from "unknown".
+    /// valid event omitted `chargedCents`, so callers never publish a partial lower-bound total.
     static func meteredCostUSD(from events: [CursorUsageEvent]) -> Double? {
         var totalCents = 0.0
-        var sawCharged = false
+        var sawValidEvent = false
         for event in events {
-            guard event.validTimestampMS != nil, let cents = event.chargedCents else { continue }
+            guard event.validTimestampMS != nil else { continue }
+            sawValidEvent = true
+            guard let cents = event.chargedCents else { return nil }
             guard cents >= 0 else { return nil }
             let nextTotal = totalCents + cents
             guard nextTotal.isFinite else { return nil }
             totalCents = nextTotal
-            sawCharged = true
         }
-        return sawCharged ? totalCents / 100.0 : nil
+        return sawValidEvent ? totalCents / 100.0 : nil
     }
 
     /// Group usage events into per-day, per-model cost entries.

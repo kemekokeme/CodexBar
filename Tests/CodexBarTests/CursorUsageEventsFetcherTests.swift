@@ -125,15 +125,14 @@ struct CursorUsageEventsFetcherTests {
     }
 
     @Test
-    func `meteredCostUSD sums chargedCents and ignores events without it`() {
-        // Two charged events (4c + 8c) plus one event with no chargedCents -> $0.12.
+    func `meteredCostUSD rejects a partial sum when an event omits chargedCents`() {
         let events = [
             Self.event(timestampMS: 1_700_000_000_000, model: "claude", input: 5, totalCents: 994, chargedCents: 4),
             Self.event(timestampMS: 1_700_000_001_000, model: "gpt-5", input: 5, totalCents: 500, chargedCents: 8),
             Self.event(timestampMS: 1_700_000_002_000, model: "default", input: 5, totalCents: 12),
         ]
 
-        #expect(Self.approxEqual(CursorUsageEventsFetcher.meteredCostUSD(from: events), 0.12))
+        #expect(CursorUsageEventsFetcher.meteredCostUSD(from: events) == nil)
     }
 
     @Test
@@ -237,6 +236,15 @@ struct CursorUsageEventsFetcherTests {
         #"{"error":"temporarily unavailable"}"#,
     ])
     func `page decoding rejects missing or malformed event arrays`(json: String) {
+        #expect(throws: DecodingError.self) {
+            _ = try JSONDecoder().decode(CursorUsageEventsPage.self, from: Data(json.utf8))
+        }
+    }
+
+    @Test(arguments: ["-1", String(Int.min)])
+    func `page decoding rejects negative event counts`(count: String) {
+        let json = #"{"totalUsageEventsCount":\#(count),"usageEventsDisplay":[]}"#
+
         #expect(throws: DecodingError.self) {
             _ = try JSONDecoder().decode(CursorUsageEventsPage.self, from: Data(json.utf8))
         }
@@ -499,34 +507,39 @@ struct CursorUsageEventsFetcherTests {
     }
 
     @Test
-    func `pagination completes at max pages when the reported total is reached`() async throws {
+    func `pagination fails closed when a full safety cap page reaches the raw total`() async {
         // swiftlint:disable line_length
         let first = #"{"timestamp":"1700000000000","model":"gpt-5","tokenUsage":{"inputTokens":10,"outputTokens":5,"cacheWriteTokens":0,"cacheReadTokens":0,"totalCents":50},"chargedCents":4}"#
         let second = #"{"timestamp":"1700000001000","model":"gpt-5","tokenUsage":{"inputTokens":20,"outputTokens":5,"cacheWriteTokens":0,"cacheReadTokens":0,"totalCents":75},"chargedCents":8}"#
+        let third = #"{"timestamp":"1700000002000","model":"gpt-5","tokenUsage":{"inputTokens":30,"outputTokens":5,"cacheWriteTokens":0,"cacheReadTokens":0,"totalCents":100},"chargedCents":12}"#
         // swiftlint:enable line_length
         let transport = ProviderHTTPTransportStub { request in
             switch Self.requestedPage(request) {
             case 1:
-                Self.httpResponse("{\"totalUsageEventsCount\":2,\"usageEventsDisplay\":[\(first)]}")
+                Self.httpResponse("{\"totalUsageEventsCount\":4,\"usageEventsDisplay\":[\(first),\(second)]}")
             default:
-                Self.httpResponse("{\"totalUsageEventsCount\":2,\"usageEventsDisplay\":[\(second)]}")
+                Self.httpResponse("{\"totalUsageEventsCount\":4,\"usageEventsDisplay\":[\(second),\(third)]}")
             }
         }
         let fetcher = CursorUsageEventsFetcher(
             baseURL: Self.baseURL,
             transport: transport,
-            pageSize: 1,
+            pageSize: 2,
             maxPages: 2)
 
-        let result = try await fetcher.fetchUsage(
-            cookieHeader: "WorkosCursorSessionToken=abc",
-            since: nil,
-            until: nil,
-            calendar: Self.utcCalendar)
-
-        #expect(result.daily.data.first?.requestCount == 2)
-        #expect(Self.approxEqual(result.daily.data.first?.costUSD, 1.25))
-        #expect(Self.approxEqual(result.meteredCostUSD, 0.12))
+        let error = await #expect(throws: CostUsageError.self) {
+            _ = try await fetcher.fetchUsage(
+                cookieHeader: "WorkosCursorSessionToken=abc",
+                since: nil,
+                until: nil,
+                calendar: Self.utcCalendar)
+        }
+        guard case let .cursorPaginationIncomplete(expected, received) = error else {
+            Issue.record("Expected cursorPaginationIncomplete")
+            return
+        }
+        #expect(expected == 4)
+        #expect(received == 4)
     }
 
     @Test

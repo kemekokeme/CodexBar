@@ -307,4 +307,17 @@ public enum ProviderBrowserCookieDefaults {
         nil
         #endif
     }
+
+    /// Mistral Auto: Chrome first (matches the original Chrome-only behavior so
+    /// existing users see no change), then Firefox so users signed in via Firefox
+    /// or Firefox Developer Edition are detected without Manual mode. Safari
+    /// follows for Full Disk Access users. Other Chromium forks stay on Manual
+    /// import to avoid scanning the full default order.
+    public static var mistralCookieImportOrder: BrowserCookieImportOrder? {
+        #if os(macOS)
+        [.chrome, .firefox, .safari]
+        #else
+        nil
+        #endif
+    }
 }
