@@ -431,13 +431,16 @@ public struct DoubaoUsageFetcher: Sendable {
             "agent-plan-team",
             "coding-plan-team",
         ])
-        if let failedSubscription = response.items.first(where: {
+        if let incompleteSubscription = response.items.first(where: {
             supportedProducts.contains($0.product.lowercased())
-                && $0.subscribed == true
+                && $0.subscribed != false
                 && $0.periods?.isEmpty != false
-                && $0.error?.isEmpty == false
-        }), let error = failedSubscription.error {
-            throw DoubaoUsageError.incompletePlanUsage(Self.compactText(error))
+        }) {
+            let error = incompleteSubscription.error?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let message = error.flatMap { $0.isEmpty ? nil : Self.compactText($0) }
+                ?? "\(incompleteSubscription.product.lowercased()) has no usage periods"
+            throw DoubaoUsageError.incompletePlanUsage(message)
         }
 
         for item in response.items {

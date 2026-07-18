@@ -520,6 +520,33 @@ struct DoubaoUsageFetcherTests {
     }
 
     @Test
+    func `arkcli active empty bucket without error does not silently return partial usage`() {
+        let data = Data(
+            """
+            {
+              "items": [
+                {
+                  "product": "coding-plan",
+                  "periods": [{"label": "session", "percent": 5}]
+                },
+                {
+                  "product": "agent-plan",
+                  "subscribed": true,
+                  "periods": []
+                }
+              ]
+            }
+            """.utf8)
+
+        #expect {
+            _ = try DoubaoUsageFetcher.decodeArkcliUsage(from: data)
+        } throws: { error in
+            guard case let DoubaoUsageError.incompletePlanUsage(message) = error else { return false }
+            return message == "agent-plan has no usage periods"
+        }
+    }
+
+    @Test
     func `arkcli viewer with no authentication requires login`() {
         let data = Data(
             """
