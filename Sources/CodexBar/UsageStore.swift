@@ -54,6 +54,7 @@ extension UsageStore {
         _ = self.openAIDashboardRequiresLogin
         _ = self.refreshingProviders
         _ = self.statuses
+        _ = self.tokenSnapshotPublications
         _ = self.historicalPaceRevision
         return 0
     }
