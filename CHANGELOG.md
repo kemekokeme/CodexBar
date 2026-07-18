@@ -25,7 +25,6 @@
 - Confetti: use branded provider palettes for reset celebrations (#2177). Thanks @kreitter!
 
 ### Fixed
-- Cost display: use a consistent Cost label while keeping one Codex inline non-billing note and a general source explanation in Cost settings.
 - Menu bar: fix palette drag-and-drop in the layout editor so dropped and reordered pills stick (#2279).
 - Menu Bar settings: remove the Layout editor's container-wide focus ring while preserving keyboard access to its tokens and controls.
 - Providers: gate version probes to enabled providers so disabled providers no longer spawn subprocesses or trigger TCC prompts at launch (#2277, #2278, fixes #2267). Thanks @kiranmagic7!
