@@ -21,6 +21,9 @@ final class FutureModificationDateClamp: @unchecked Sendable {
 }
 
 public struct LocalAgentSessionScanner: Sendable {
+    typealias ProcessOutputProvider = @Sendable ([String: String]) async -> String
+    typealias CWDProvider = @Sendable ([Int32], [String: String]) async -> [Int32: String]
+
     private struct Rollout: Sendable {
         let url: URL
         let modifiedAt: Date
@@ -37,9 +40,27 @@ public struct LocalAgentSessionScanner: Sendable {
 
     public let config: SessionScanConfig
     private let futureModificationDateClamp = FutureModificationDateClamp()
+    private let processOutputProvider: ProcessOutputProvider?
+    private let cwdProvider: CWDProvider?
+    private let didVisitDirectoryEntry: (@Sendable () -> Void)?
 
     public init(config: SessionScanConfig = SessionScanConfig()) {
         self.config = config
+        self.processOutputProvider = nil
+        self.cwdProvider = nil
+        self.didVisitDirectoryEntry = nil
+    }
+
+    init(
+        config: SessionScanConfig = SessionScanConfig(),
+        processOutputProvider: @escaping ProcessOutputProvider,
+        cwdProvider: @escaping CWDProvider,
+        didVisitDirectoryEntry: (@Sendable () -> Void)? = nil)
+    {
+        self.config = config
+        self.processOutputProvider = processOutputProvider
+        self.cwdProvider = cwdProvider
+        self.didVisitDirectoryEntry = didVisitDirectoryEntry
     }
 
     @concurrent
@@ -48,7 +69,11 @@ public struct LocalAgentSessionScanner: Sendable {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         includeFileOnlySessions: Bool = true) async -> [AgentSession]
     {
-        let processOutput = await self.processOutput(environment: environment)
+        let processOutput = if let processOutputProvider = self.processOutputProvider {
+            await processOutputProvider(environment)
+        } else {
+            await self.processOutput(environment: environment)
+        }
         let allProcesses = AgentPSOutputParser.parse(processOutput)
         let processes = Array(AgentSessionCorrelation.newestProcessesFirst(
             AgentPSOutputParser.agentProcesses(from: allProcesses))
@@ -58,7 +83,15 @@ public struct LocalAgentSessionScanner: Sendable {
             includeFileOnlySessions: includeFileOnlySessions)
         else { return [] }
         let codexAppServerPresent = AgentPSOutputParser.hasCodexAppServer(in: allProcesses)
-        let cwdByPID = await self.cwdByPID(processes.map(\ .pid), environment: environment)
+        let cwdByPID = if let cwdProvider = self.cwdProvider {
+            await cwdProvider(processes.map(\ .pid), environment)
+        } else {
+            await self.cwdByPID(processes.map(\ .pid), environment: environment)
+        }
+        let codexCWDs = processes.compactMap { process -> String? in
+            guard AgentPSOutputParser.provider(for: process) == .codex else { return nil }
+            return cwdByPID[process.pid]
+        }
         let homeDirectory = URL(fileURLWithPath: environment["HOME"] ?? NSHomeDirectory(), isDirectory: true)
         let codexHomeDirectory = URL(
             fileURLWithPath: environment["CODEX_HOME"] ?? homeDirectory.appendingPathComponent(".codex").path,
@@ -67,11 +100,19 @@ public struct LocalAgentSessionScanner: Sendable {
         var directoryBudget = DirectoryMetadataScanBudget(
             maxEntryCount: self.config.maxDirectoryEntryCount,
             maxDepth: self.config.maxDirectoryDepth,
-            timeLimit: self.config.directoryScanBudget)
-        let rollouts = self.codexRollouts(
-            now: now,
-            codexHomeDirectory: codexHomeDirectory,
-            directoryBudget: &directoryBudget)
+            timeLimit: includeFileOnlySessions
+                ? self.config.directoryScanBudget
+                : min(self.config.directoryScanBudget, self.config.adaptiveDirectoryScanBudget),
+            didVisitEntry: self.didVisitDirectoryEntry)
+        let rollouts: [Rollout] = if includeFileOnlySessions || !codexCWDs.isEmpty {
+            self.codexRollouts(
+                now: now,
+                codexHomeDirectory: codexHomeDirectory,
+                matchingCWDs: includeFileOnlySessions ? nil : codexCWDs,
+                directoryBudget: &directoryBudget)
+        } else {
+            []
+        }
         let threadMetadata = CodexThreadMetadataReader(codexHomeDirectory: codexHomeDirectory)
             .metadata(for: Set(rollouts.map(\.metadata.sessionID)))
         return self.sessions(
@@ -121,6 +162,10 @@ public struct LocalAgentSessionScanner: Sendable {
             processes: claudeProcesses,
             cwdByPID: cwdByPID,
             transcriptsByCWD: claudeTranscriptsByCWD)
+        let codexProcesses = processes.filter { AgentPSOutputParser.provider(for: $0) == .codex }
+        let codexDescriptiveNamePIDs = AgentSessionCorrelation.unambiguousProcessIDs(
+            processes: codexProcesses,
+            cwdByPID: cwdByPID)
 
         for process in processes {
             guard let provider = AgentPSOutputParser.provider(for: process) else { continue }
@@ -163,8 +208,10 @@ public struct LocalAgentSessionScanner: Sendable {
                     pid: process.pid,
                     cwd: cwd ?? rollout?.metadata.cwd,
                     projectName: Self.projectName(cwd ?? rollout?.metadata.cwd),
-                    sessionName: rollout?.metadata.descriptiveName(
-                        threadMetadata: rollout.flatMap { threadMetadata[$0.metadata.sessionID] }),
+                    sessionName: codexDescriptiveNamePIDs.contains(process.pid)
+                        ? rollout?.metadata.descriptiveName(
+                            threadMetadata: rollout.flatMap { threadMetadata[$0.metadata.sessionID] })
+                        : nil,
                     startedAt: process.startedAt,
                     lastActivityAt: rollout?.modifiedAt,
                     transcriptPath: rollout?.url.path,
@@ -246,6 +293,7 @@ public struct LocalAgentSessionScanner: Sendable {
     private func codexRollouts(
         now: Date,
         codexHomeDirectory: URL,
+        matchingCWDs: [String]?,
         directoryBudget: inout DirectoryMetadataScanBudget) -> [Rollout]
     {
         let root = codexHomeDirectory.appendingPathComponent("sessions", isDirectory: true)
@@ -270,12 +318,22 @@ public struct LocalAgentSessionScanner: Sendable {
             }
         }.sorted { $0.modifiedAt > $1.modifiedAt }
 
-        return candidates
-            .prefix(max(0, self.config.maxCodexRolloutCount))
-            .compactMap { candidate in
-                guard let metadata = CodexRolloutFirstLineParser.read(from: candidate.url) else { return nil }
-                return Rollout(url: candidate.url, modifiedAt: candidate.modifiedAt, metadata: metadata)
+        var remainingCWDs = matchingCWDs ?? []
+        var rollouts: [Rollout] = []
+        for candidate in candidates.prefix(max(0, self.config.maxCodexRolloutCount)) {
+            guard directoryBudget.hasTimeRemaining() else { break }
+            guard let metadata = CodexRolloutFirstLineParser.read(from: candidate.url) else { continue }
+            rollouts.append(Rollout(url: candidate.url, modifiedAt: candidate.modifiedAt, metadata: metadata))
+            if let index = remainingCWDs.firstIndex(where: {
+                AgentSessionCorrelation.codexWorkingDirectoriesMatch(metadata.cwd, $0)
+            }) {
+                remainingCWDs.remove(at: index)
+                if matchingCWDs != nil, remainingCWDs.isEmpty {
+                    break
+                }
             }
+        }
+        return rollouts
     }
 
     private func findExecutable(_ name: String, environment: [String: String]) -> String? {

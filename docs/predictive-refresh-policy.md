@@ -186,7 +186,8 @@ Adaptive stores no persistent interaction history.
   metadata scan, not a provider request. Pause agent-aware scans under Low Power Mode or serious/critical thermal
   pressure; keep scanning when the user explicitly enables Agent Sessions presentation.
 - Bound each scan to the newest 64 agent processes, 128 Codex rollout metadata records, and 64 Claude transcript
-  candidates per project. Share a 512-entry, depth-1, 250 ms budget across Codex and Claude directory enumeration, and
+  candidates per project. Share a 512-entry, depth-1, 150 ms budget across agent-aware Codex and Claude directory
+  enumeration, and
   clamp future transcript mtimes to the scan time. Keep the first clamped value for an unchanged future-dated file so
   repeated scans cannot synthesize newer activity.
 - When Agent Sessions presentation is disabled, discard the full scan result after deriving the newest `Date`. Do not

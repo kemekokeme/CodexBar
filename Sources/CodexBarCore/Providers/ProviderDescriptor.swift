@@ -94,6 +94,7 @@ public enum ProviderDescriptorRegistry {
         .abacus: AbacusProviderDescriptor.descriptor,
         .mistral: MistralProviderDescriptor.descriptor,
         .deepseek: DeepSeekProviderDescriptor.descriptor,
+        .deepinfra: DeepInfraProviderDescriptor.descriptor,
         .codebuff: CodebuffProviderDescriptor.descriptor,
         .crof: CrofProviderDescriptor.descriptor,
         .venice: VeniceProviderDescriptor.descriptor,

@@ -69,7 +69,13 @@ extension UsageStore {
                 self.probeLogs = [:]
                 guard self.startupBehavior.automaticallyStartsBackgroundWork else { return }
                 self.startTimer()
+                self.startTokenTimer()
                 self.updateProviderRuntimes()
+                let enabledNow = Set(self.settings.enabledProvidersOrdered(
+                    metadataByProvider: self.providerMetadata))
+                if enabledNow != self.versionDetectionProviders {
+                    self.detectVersions()
+                }
                 await self.refreshHistoricalDatasetIfNeeded()
                 await self.refreshForSettingsChange()
             }
@@ -184,6 +190,7 @@ final class UsageStore {
     var openAIDashboardCookieImportStatus: String?
     var openAIDashboardCookieImportDebugLog: String?
     var versions: [UsageProvider: String] = [:]
+    @ObservationIgnored var versionDetectionProviders: Set<UsageProvider> = []
     var isRefreshing = false
     var hasForcedRefreshEnrichmentInFlight = false
     var refreshingProviders: Set<UsageProvider> = []
@@ -350,6 +357,8 @@ final class UsageStore {
     @ObservationIgnored var lastTokenFetchAt: [UsageProvider: Date] = [:]
     @ObservationIgnored var lastTokenFetchScope: [UsageProvider: String] = [:]
     @ObservationIgnored var planUtilizationHistory: [UsageProvider: PlanUtilizationHistoryBuckets] = [:]
+    @ObservationIgnored var sessionEquivalentBurnCache: [UsageProvider: SessionEquivalentBurnCacheEntry] = [:]
+    @ObservationIgnored var sessionEquivalentHistoryScanCount: Int = 0
 
     /// Background load task; cleared on deinit and on the cancel test seam.
     @ObservationIgnored var planUtilizationHistoryLoadTask: Task<Void, Never>?
@@ -361,7 +370,22 @@ final class UsageStore {
     @ObservationIgnored private var hasCompletedInitialRefresh: Bool = false
     @ObservationIgnored private let providerAvailabilityCacheTTL: TimeInterval = 1
     @ObservationIgnored let accountInfoCacheTTL: TimeInterval = 30
-    @ObservationIgnored let tokenFetchTTL: TimeInterval = 60 * 60
+    /// Token scans can cause an additional widget snapshot publication. Keep the shortest automatic
+    /// cadence at five minutes so one- and two-minute provider refreshes do not exhaust WidgetKit's
+    /// reload budget or repeatedly traverse large local histories.
+    static let minimumTokenFetchTTL: TimeInterval = 5 * 60
+
+    var tokenFetchTTL: TimeInterval? {
+        Self.tokenFetchTTL(for: self.settings.refreshFrequency)
+    }
+
+    static func tokenFetchTTL(for frequency: RefreshFrequency) -> TimeInterval? {
+        let interval = frequency.usesAdaptivePolicy
+            ? AdaptiveRefreshPolicy.nominalIntervalForHeuristics
+            : frequency.seconds
+        return interval.map { max($0, Self.minimumTokenFetchTTL) }
+    }
+
     @ObservationIgnored let tokenFetchTimeout: TimeInterval = 10 * 60
     @ObservationIgnored let startupBehavior: StartupBehavior
     @ObservationIgnored let planUtilizationPersistenceCoordinator: PlanUtilizationHistoryPersistenceCoordinator
@@ -956,6 +980,7 @@ extension UsageStore {
                 .doubao: "Doubao debug log not yet implemented",
                 .sakana: "Sakana AI debug log not yet implemented",
                 .venice: "Venice debug log not yet implemented",
+                .deepinfra: "DeepInfra debug log not yet implemented",
                 .commandcode: "Command Code debug log not yet implemented",
                 .qoder: "Qoder debug log not yet implemented",
                 .stepfun: "StepFun debug log not yet implemented",
@@ -1048,10 +1073,10 @@ extension UsageStore {
                         hasTokenAccount: deepSeekHasTokenAccount)
                 case .clinepass, .gemini, .antigravity, .opencode, .opencodego, .alibabatokenplan, .factory,
                      .copilot, .devin, .vertexai, .kilo, .kiro, .kimi, .moonshot, .jetbrains, .perplexity,
-                     .mimo, .doubao, .sakana, .abacus, .mistral, .codebuff, .crof, .windsurf, .venice, .manus,
-                     .commandcode, .qoder, .stepfun, .bedrock, .grok, .groq, .t3chat, .llmproxy, .litellm, .zed,
-                     .deepgram, .poe, .chutes, .neuralwatt, .clawrouter, .longcat, .wayfinder, .sub2api, .zenmux,
-                     .aiand:
+                     .mimo, .doubao, .sakana, .abacus, .mistral, .deepinfra, .codebuff, .crof, .windsurf,
+                     .venice, .manus, .commandcode, .qoder, .stepfun, .bedrock, .grok, .groq, .t3chat, .llmproxy,
+                     .litellm, .zed, .deepgram, .poe, .chutes, .neuralwatt, .clawrouter, .longcat, .wayfinder,
+                     .sub2api, .zenmux, .aiand:
                     return unimplementedDebugLogMessages[provider] ?? "Debug log not yet implemented"
                 }
             }
@@ -1260,8 +1285,19 @@ extension UsageStore {
         }
     }
 
-    private func detectVersions() {
-        let implementations = ProviderCatalog.all
+    /// Version probes can spawn subprocesses (Antigravity's `ps` scan trips a TCC
+    /// prompt, CLI providers exec their binaries), so disabled providers must not
+    /// be probed (#2267). Settings changes re-run this when the enabled set changes.
+    static func versionDetectionImplementations(
+        enabled: Set<UsageProvider>) -> [any ProviderImplementation]
+    {
+        ProviderCatalog.all.filter { enabled.contains($0.id) }
+    }
+
+    func detectVersions() {
+        let enabled = Set(self.settings.enabledProvidersOrdered(metadataByProvider: self.providerMetadata))
+        self.versionDetectionProviders = enabled
+        let implementations = Self.versionDetectionImplementations(enabled: enabled)
         let browserDetection = self.browserDetection
         Task { @MainActor [weak self] in
             let resolved = await Task.detached { () -> [UsageProvider: String] in

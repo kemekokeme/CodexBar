@@ -32,8 +32,10 @@ struct AgentSessionRemoteRefreshGate {
 @MainActor
 @Observable
 final class AgentSessionsStore {
+    typealias LocalScan = @Sendable (_ includeFileOnlySessions: Bool) async -> [AgentSession]
+
     private let settings: SettingsStore
-    private let localScanner: LocalAgentSessionScanner
+    private let localScan: LocalScan
     private let remoteFetcher: RemoteSessionFetcher
     @ObservationIgnored private var localRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var remoteRefreshTask: Task<Void, Never>?
@@ -52,7 +54,19 @@ final class AgentSessionsStore {
         remoteFetcher: RemoteSessionFetcher = RemoteSessionFetcher())
     {
         self.settings = settings
-        self.localScanner = localScanner
+        self.localScan = { includeFileOnlySessions in
+            await localScanner.scan(includeFileOnlySessions: includeFileOnlySessions)
+        }
+        self.remoteFetcher = remoteFetcher
+    }
+
+    init(
+        settings: SettingsStore,
+        localScan: @escaping LocalScan,
+        remoteFetcher: RemoteSessionFetcher = RemoteSessionFetcher())
+    {
+        self.settings = settings
+        self.localScan = localScan
         self.remoteFetcher = remoteFetcher
     }
 
@@ -150,7 +164,7 @@ final class AgentSessionsStore {
         }
     }
 
-    private func refreshLocal() async {
+    func refreshLocal() async {
         guard self.localMonitoringEnabled, !self.localRefreshInFlight else { return }
         let processInfo = ProcessInfo.processInfo
         guard Self.shouldScanLocally(
@@ -160,7 +174,7 @@ final class AgentSessionsStore {
             thermalState: processInfo.thermalState)
         else { return }
         self.localRefreshInFlight = true
-        let sessions = await self.localScanner.scan(includeFileOnlySessions: self.settings.agentSessionsEnabled)
+        let sessions = await self.localScan(self.settings.agentSessionsEnabled)
         self.localRefreshInFlight = false
         guard !Task.isCancelled, self.localMonitoringEnabled else { return }
         self.applyLocalScanResult(sessions)

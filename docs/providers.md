@@ -8,7 +8,7 @@ read_when:
 
 # Providers
 
-CodexBar currently registers 62 provider IDs. Some companies expose multiple surfaces, such as Codex vs OpenAI API or
+CodexBar currently registers 63 provider IDs. Some companies expose multiple surfaces, such as Codex vs OpenAI API or
 OpenCode vs OpenCode Go, because the auth source and quota shape differ.
 
 ## Fetch strategies (current)
@@ -72,6 +72,7 @@ scan fails, while provider/account configuration changes replace obsolete result
 | Abacus AI | Browser cookies → compute points + billing API (`web`). |
 | Mistral | Console billing, credit balance, and Vibe subscription usage via browser cookies (`web`). |
 | DeepSeek | API key from env or token accounts → balance endpoint (`api`). |
+| DeepInfra | API key from env or token accounts → billing checklist + monthly usage endpoints (`api`). |
 | Moonshot | API key from config/env → balance endpoint (`api`). |
 | Codebuff | API token from config/env or `codebuff login` credentials → usage API (`api`). |
 | Crof | API key from config/env → credit balance + requests quota API (`api`). |
@@ -377,6 +378,14 @@ scan fails, while provider/account configuration changes replace obsolete result
 - Shows total balance with paid vs. granted breakdown; USD preferred when multiple currencies present.
 - Status: `https://status.deepseek.com` (link only, no auto-polling).
 - Details: `docs/deepseek.md`.
+
+## DeepInfra
+- API key via `DEEPINFRA_API_KEY` / `DEEPINFRA_TOKEN` env var or DeepInfra token accounts.
+- Reads prepaid balance, current billing-cycle spend, spending limit, and account suspension state from the billing checklist endpoint.
+- Reads current-month spend from the billing usage endpoint.
+- The automatic menu-bar metric shows the available balance; the provider card shows balance text rather than an inferred percentage, plus real spending-limit progress when configured.
+- Status: `https://status.deepinfra.com` (link only, no auto-polling).
+- Details: `docs/deepinfra.md`.
 
 ## Moonshot / Kimi API
 - API key via `MOONSHOT_API_KEY` / `MOONSHOT_KEY` env var or provider config.

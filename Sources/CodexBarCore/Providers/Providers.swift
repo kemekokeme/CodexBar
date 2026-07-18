@@ -44,6 +44,7 @@ public enum UsageProvider: String, CaseIterable, Sendable, Codable {
     case abacus
     case mistral
     case deepseek
+    case deepinfra
     case codebuff
     case crof
     case venice
@@ -109,6 +110,7 @@ public enum IconStyle: String, Sendable, CaseIterable {
     case abacus
     case mistral
     case deepseek
+    case deepinfra
     case codebuff
     case crof
     case venice

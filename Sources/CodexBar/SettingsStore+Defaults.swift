@@ -390,6 +390,97 @@ extension SettingsStore {
         }
     }
 
+    var menuBarLayout: MenuBarLayout {
+        get {
+            self.defaultsState.storedMenuBarLayout ?? MenuBarLayout.migrated(
+                iconStyle: self.menuBarIconStyle,
+                displayMode: self.menuBarDisplayMode,
+                metricPreference: .automatic,
+                resetTimeDisplayStyle: self.resetTimeDisplayStyle)
+        }
+        set {
+            self.defaultsState.storedMenuBarLayout = newValue
+            self.persistMenuBarLayout(newValue, key: "menuBarLayout")
+        }
+    }
+
+    var hasStoredMenuBarLayout: Bool {
+        self.defaultsState.storedMenuBarLayout != nil
+    }
+
+    var menuBarLayoutOverrides: [UsageProvider: MenuBarLayout] {
+        Dictionary(uniqueKeysWithValues: self.defaultsState.menuBarLayoutOverridesRaw.compactMap { key, value in
+            UsageProvider(rawValue: key).map { ($0, value) }
+        })
+    }
+
+    func menuBarLayout(for provider: UsageProvider) -> MenuBarLayout {
+        self.menuBarLayoutResolution(for: provider).layout
+    }
+
+    func menuBarLayoutForGlobalEditing(representativeProvider: UsageProvider?) -> MenuBarLayout {
+        if let stored = self.defaultsState.storedMenuBarLayout {
+            return stored
+        }
+        guard let representativeProvider else { return self.menuBarLayout }
+        return self.menuBarLayoutResolution(for: representativeProvider).layout
+    }
+
+    func menuBarLayoutResolution(for provider: UsageProvider) -> MenuBarLayoutResolution {
+        if let override = self.defaultsState.menuBarLayoutOverridesRaw[provider.rawValue] {
+            return .stored(override)
+        }
+        if let stored = self.defaultsState.storedMenuBarLayout {
+            return .stored(stored)
+        }
+        return .legacy(
+            iconStyle: self.menuBarIconStyle,
+            displayMode: self.menuBarDisplayMode,
+            metricPreference: self.menuBarMetricPreference(for: provider),
+            resetTimeDisplayStyle: self.resetTimeDisplayStyle,
+            provider: provider)
+    }
+
+    func setMenuBarLayout(_ layout: MenuBarLayout, for provider: UsageProvider?) {
+        if let provider {
+            self.defaultsState.menuBarLayoutOverridesRaw[provider.rawValue] = layout
+            self.persistMenuBarLayoutOverrides()
+        } else {
+            self.menuBarLayout = layout
+        }
+    }
+
+    func removeMenuBarLayoutOverride(for provider: UsageProvider) {
+        guard self.defaultsState.menuBarLayoutOverridesRaw.removeValue(forKey: provider.rawValue) != nil else { return }
+        self.persistMenuBarLayoutOverrides()
+    }
+
+    var menuBarLayoutSize: MenuBarLayoutSize {
+        get { MenuBarLayoutSize(rawValue: self.defaultsState.menuBarLayoutSizeRaw) ?? .regular }
+        set {
+            self.defaultsState.menuBarLayoutSizeRaw = newValue.rawValue
+            self.userDefaults.set(newValue.rawValue, forKey: "menuBarLayoutSize")
+        }
+    }
+
+    var menuBarLayoutGap: MenuBarLayoutGap {
+        get { MenuBarLayoutGap(rawValue: self.defaultsState.menuBarLayoutGapRaw) ?? .regular }
+        set {
+            self.defaultsState.menuBarLayoutGapRaw = newValue.rawValue
+            self.userDefaults.set(newValue.rawValue, forKey: "menuBarLayoutGap")
+        }
+    }
+
+    private func persistMenuBarLayout(_ layout: MenuBarLayout, key: String) {
+        guard let data = try? JSONEncoder().encode(layout) else { return }
+        self.userDefaults.set(data, forKey: key)
+    }
+
+    private func persistMenuBarLayoutOverrides() {
+        guard let data = try? JSONEncoder().encode(self.defaultsState.menuBarLayoutOverridesRaw) else { return }
+        self.userDefaults.set(data, forKey: "menuBarLayoutOverrides")
+    }
+
     var copilotIconSecondaryWindowIDRaw: String {
         get { self.defaultsState.copilotIconSecondaryWindowIDRaw }
         set {

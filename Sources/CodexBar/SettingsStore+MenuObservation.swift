@@ -36,6 +36,10 @@ extension SettingsStore {
         _ = self.historicalTrackingEnabled
         _ = self.multiAccountMenuLayout
         _ = self.menuBarMetricPreferencesRaw
+        _ = self.menuBarLayout
+        _ = self.menuBarLayoutOverrides
+        _ = self.menuBarLayoutSize
+        _ = self.menuBarLayoutGap
         _ = self.copilotIconSecondaryWindowIDRaw
         _ = self.costUsageEnabled
         _ = self.codexLocalSessionCostLedgerEnabled

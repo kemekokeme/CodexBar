@@ -185,19 +185,21 @@ Packaged synthetic proof (fake `cswap` executable, no real accounts or credentia
         - `~/Library/Application Support/Claude/claude-code-sessions/**/.claude/projects`
     - Current Claude Desktop metadata under `claude-code-sessions` points to shared CLI session JSONL by
       `cliSessionId`; metadata-only directories are not treated as usage sources.
-  - Supported pi sessions:
+  - Supported pi-compatible sessions:
     - `~/.pi/agent/sessions/**/*.jsonl`
+    - `~/.omp/agent/sessions/**/*.jsonl`
 - Files: `**/*.jsonl` under the native project roots, discovered Claude Desktop project roots,
-  plus supported pi session files.
+  plus supported pi-compatible session files.
 - Parsing:
   - Native Claude logs parse lines with `type: "assistant"` and `message.usage`.
   - Uses per-model token counts (input, cache read/create, output).
   - Deduplicates streaming chunks by `message.id + requestId` (usage is cumulative per chunk).
-  - pi sessions attribute `anthropic` assistant usage to Claude and bucket it by assistant-turn timestamp, so a single pi
-    session can contribute to multiple models/days.
+  - pi and OMP sessions attribute `anthropic` assistant usage to Claude and bucket it by assistant-turn timestamp, so a
+    single pi-compatible session can contribute to multiple models/days.
+  - Matching assistant entry IDs within the same session are counted once across roots; distinct turns are retained.
 - Cache:
   - Native + merged provider cache: `~/Library/Caches/CodexBar/cost-usage/claude-v2.json`
-  - pi session cache: `~/Library/Caches/CodexBar/cost-usage/pi-sessions-v1.json`
+  - pi-compatible session cache: `~/Library/Caches/CodexBar/cost-usage/pi-sessions-v7.json`
 
 ## Key files
 - OAuth: `Sources/CodexBarCore/Providers/Claude/ClaudeOAuth/*`

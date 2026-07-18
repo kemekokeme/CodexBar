@@ -154,19 +154,21 @@ Example:
     - `~/.codex/sessions/YYYY/MM/DD/*.jsonl`
     - `~/.codex/archived_sessions/*.jsonl` (flat; date inferred from filename when present)
     - Or `$CODEX_HOME/sessions/...` + `$CODEX_HOME/archived_sessions/...` if `CODEX_HOME` is set.
-  - Supported pi sessions:
+  - Supported pi-compatible sessions:
     - `~/.pi/agent/sessions/**/*.jsonl`
+    - `~/.omp/agent/sessions/**/*.jsonl`
 - Scanner:
   - Native Codex logs parse `event_msg` token_count entries and `turn_context` model markers; when both are present,
     `turn_context` is authoritative for the model bucket.
-  - pi sessions count assistant-message usage rows and attribute `openai-codex` assistant usage to Codex.
-  - pi assistant usage is bucketed by assistant-turn timestamp, so mixed-model pi sessions can contribute to multiple
-    days/models correctly.
+  - pi and OMP sessions count assistant-message usage rows and attribute `openai-codex` assistant usage to Codex.
+  - pi-compatible assistant usage is bucketed by assistant-turn timestamp, so mixed-model sessions can contribute to
+    multiple days/models correctly.
+  - Matching assistant entry IDs within the same session are counted once across roots; distinct turns are retained.
   - Native conversation rows reuse the corrected cached per-file totals and existing pricing tables. They are hidden
-    when pi usage joins the aggregate because the native-only rows would not reconcile with the merged total.
+    when pi-compatible usage joins the aggregate because the native-only rows would not reconcile with the merged total.
 - Cache:
   - Native + merged provider cache: `~/Library/Caches/CodexBar/cost-usage/codex-v10.json`
-  - pi session cache: `~/Library/Caches/CodexBar/cost-usage/pi-sessions-v6.json`
+  - pi-compatible session cache: `~/Library/Caches/CodexBar/cost-usage/pi-sessions-v7.json`
 - Window: configurable 1-365 day rolling history, with a 60s minimum refresh interval.
 
 ### Usage & Spend account rows
@@ -175,9 +177,9 @@ Settings → Usage & Spend performs a separate fixed 30-day scan for every visib
 the account source, exact Codex home, authentication fingerprint, and cache identity before scanning. A missing or
 invalid home is omitted; it never falls back to ambient `~/.codex` or to the global Codex token snapshot.
 
-These account rows intentionally exclude pi sessions because pi history is machine-local rather than owned by one
-Codex account. The normal Codex cost menu and CLI scan continue to include supported pi history. The dashboard labels
-its values as local estimates and keeps currencies separate.
+These account rows intentionally exclude pi and OMP sessions because their history is machine-local rather than owned
+by one Codex account. The normal Codex cost menu and CLI scan continue to include supported pi-compatible history. The
+dashboard labels its values as local estimates and keeps currencies separate.
 
 ## Key files
 - Web: `Sources/CodexBarCore/OpenAIWeb/*`

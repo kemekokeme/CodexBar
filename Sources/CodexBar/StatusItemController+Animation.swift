@@ -248,6 +248,14 @@ extension StatusItemController {
         let snapshot = self.store.snapshot(for: primaryProvider)
         let warningFlash = self.quotaWarningFlashActive(provider: primaryProvider)
 
+        if let layoutResult = self.applyStoredUnifiedMenuBarLayoutIfNeeded(
+            provider: primaryProvider,
+            snapshot: snapshot,
+            warningFlash: warningFlash)
+        {
+            return layoutResult
+        }
+
         // IconRenderer treats these values as a left-to-right "progress fill" percentage; depending on the
         // user setting we pass either "percent left" or "percent used".
         let resolved = self.resolvedMenuBarIconPercents(
@@ -392,6 +400,27 @@ extension StatusItemController {
         return false
     }
 
+    private func applyStoredUnifiedMenuBarLayoutIfNeeded(
+        provider: UsageProvider,
+        snapshot: UsageSnapshot?,
+        warningFlash: Bool)
+        -> Bool?
+    {
+        guard self.settings.menuBarShowsBrandIconWithPercent else {
+            self.statusItem.length = NSStatusItem.variableLength
+            return nil
+        }
+        guard let wasCached = self.applyStoredMenuBarLayoutIfNeeded(
+            provider: provider,
+            snapshot: snapshot,
+            icon: ProviderBrandIcon.image(for: provider),
+            warningFlash: warningFlash,
+            statusItem: self.statusItem)
+        else { return nil }
+        self.noteIconPerfRender(skipped: wasCached)
+        return wasCached
+    }
+
     private func deferMergedIconRenderDuringMenuTrackingIfNeeded() -> Bool {
         guard self.shouldMergeIcons, self.isMergedMenuOpen else { return false }
         self.deferredMergedIconRenderAfterTracking = true
@@ -439,8 +468,24 @@ extension StatusItemController {
         // user setting we pass either "percent left" or "percent used".
         let showUsed = self.settings.usageBarsShowUsed
         let showBrandPercent = self.settings.menuBarShowsBrandIconWithPercent
+        if !showBrandPercent {
+            self.statusItems[provider]?.length = NSStatusItem.variableLength
+        }
         let style: IconStyle = self.store.style(for: provider)
         let warningFlash = self.quotaWarningFlashActive(provider: provider)
+
+        if showBrandPercent,
+           let statusItem = self.statusItems[provider],
+           let wasCached = self.applyStoredMenuBarLayoutIfNeeded(
+               provider: provider,
+               snapshot: snapshot,
+               icon: ProviderBrandIcon.image(for: provider),
+               warningFlash: warningFlash,
+               statusItem: statusItem)
+        {
+            self.noteIconPerfRender(skipped: wasCached)
+            return wasCached
+        }
 
         if showBrandPercent,
            let brand = ProviderBrandIcon.image(for: provider)
@@ -706,7 +751,7 @@ extension StatusItemController {
         return image
     }
 
-    private var shouldUseHighContrastStatusItemContent: Bool {
+    var shouldUseHighContrastStatusItemContent: Bool {
         self.settings.menuBarHighContrastOnInactiveDisplays
             && self.settings.menuBarIconStyle == .iconAndPercent
     }
@@ -816,6 +861,11 @@ extension StatusItemController {
         }
         if provider == .deepseek,
            let balance = Self.deepSeekBalanceDisplayText(snapshot: snapshot)
+        {
+            return balance
+        }
+        if provider == .deepinfra,
+           let balance = Self.deepInfraBalanceDisplayText(snapshot: snapshot)
         {
             return balance
         }
@@ -944,6 +994,22 @@ extension StatusItemController {
 
         let balance = rawValue.split(separator: " ", maxSplits: 1).first
         return balance.map(String.init)
+    }
+
+    nonisolated static func deepInfraBalanceDisplayText(snapshot: UsageSnapshot?) -> String? {
+        guard
+            let detail = snapshot?.primary?.resetDescription?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                let balanceDetail = detail.components(separatedBy: " · ").dropLast().last?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                    balanceDetail.hasPrefix("$"),
+                    let value = balanceDetail.split(separator: " ", maxSplits: 1).first
+        else {
+            return nil
+        }
+
+        let prefix = balanceDetail.contains(" owed") ? "-" : ""
+        return prefix + String(value)
     }
 
     nonisolated static func miMoBalanceDisplayText(
@@ -1166,6 +1232,17 @@ extension StatusItemController {
     /// here rather than scheduling whichever lane happened to drive the icon.
     func menuBarDisplayedResetDates(for provider: UsageProvider, now: Date) -> [Date] {
         let snapshot = self.store.snapshot(for: provider)
+        let layoutResolution = self.settings.menuBarLayoutResolution(for: provider)
+        if !layoutResolution.usesLegacyRendering,
+           self.settings.menuBarIconStyle == .iconAndPercent
+        {
+            let showsCountdown = layoutResolution.layout.lines
+                .joined()
+                .contains(.resetCountdown)
+            guard showsCountdown else { return [] }
+            let window = self.menuBarLayoutWindows(provider: provider, snapshot: snapshot, now: now).automatic
+            return window?.resetsAt.map { [$0] } ?? []
+        }
         let mode = self.settings.menuBarDisplayMode
 
         let projection = self.store.codexConsumerProjectionIfNeeded(

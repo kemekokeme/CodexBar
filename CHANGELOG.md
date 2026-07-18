@@ -3,6 +3,7 @@
 ## 0.44.1 — Unreleased
 
 ### Fixed
+- Menu Bar settings: remove the Layout editor's container-wide focus ring while preserving keyboard access to its tokens and controls.
 
 ## 0.44.0 — 2026-07-17
 

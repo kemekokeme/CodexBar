@@ -54,7 +54,8 @@ read_when:
   recent Codex rollouts, reads rollout first-line metadata and mtimes, and inspects Claude transcript metadata. When
   the Agent Sessions UI is off, CodexBar discards the resulting session records and retains only the latest `Date`.
   Each scan considers at most 64 agent processes, parses at most 128 Codex rollout metadata records, keeps at most 64
-  Claude transcript candidates per project, and shares a 512-entry, depth-1, 250 ms directory metadata budget. Future
+  Claude transcript candidates per project, and shares a 512-entry, depth-1, 150 ms agent-aware directory metadata
+  budget. Future
   transcript mtimes are clamped to one scanner-lifetime timestamp. The clamp retains no file paths, and unchanged
   future-dated files cannot manufacture newer activity every 30 seconds.
   Agent-aware scans pause under Low Power Mode and serious/critical thermal pressure. Explicitly enabling Agent
