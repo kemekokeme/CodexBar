@@ -29,7 +29,9 @@ GIT_COMMIT=test
 APP_TEAM_ID=TESTTEAM
 source "$PLIST_SCRIPT"
 
-plutil -lint "$APP/Contents/Info.plist"
+if command -v plutil >/dev/null 2>&1; then
+  plutil -lint "$APP/Contents/Info.plist"
+fi
 python3 - "$APP/Contents/Info.plist" <<'PY'
 import plistlib
 import sys
