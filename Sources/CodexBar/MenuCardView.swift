@@ -612,13 +612,50 @@ private struct UsageMenuCardUsageContentView: View {
     let showBottomDivider: Bool
     @Environment(\.menuItemHighlighted) private var isHighlighted
 
+    /// Doubao ships Coding Plan and Agent Plan subscriptions, each with personal
+    /// and team editions whose windows share period labels. Split the two plan
+    /// families here; team rows keep distinct ids and disclose their edition.
+    private var doubaoSplitMetrics: (
+        coding: [UsageMenuCardView.Model.Metric],
+        agent: [UsageMenuCardView.Model.Metric])?
+    {
+        guard self.model.provider == .doubao else { return nil }
+        let agent = self.model.metrics.filter { $0.id.hasPrefix("doubao-agent-") }
+        guard !agent.isEmpty else { return nil }
+        let coding = self.model.metrics.filter { !$0.id.hasPrefix("doubao-agent-") }
+        return (coding, agent)
+    }
+
+    private func groupHeader(_ title: String) -> some View {
+        Text(L(title))
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+            .textCase(.uppercase)
+    }
+
+    private func metricRows(_ metrics: [UsageMenuCardView.Model.Metric]) -> some View {
+        ForEach(metrics, id: \.id) { metric in
+            MetricRow(
+                metric: metric,
+                title: UsageMenuCardView.popupMetricTitle(provider: self.model.provider, metric: metric),
+                progressColor: self.model.progressColor)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(self.model.metrics, id: \.id) { metric in
-                MetricRow(
-                    metric: metric,
-                    title: UsageMenuCardView.popupMetricTitle(provider: self.model.provider, metric: metric),
-                    progressColor: self.model.progressColor)
+            if let split = self.doubaoSplitMetrics {
+                if !split.coding.isEmpty {
+                    self.groupHeader("Coding Plan")
+                    self.metricRows(split.coding)
+                }
+                if !split.coding.isEmpty {
+                    Divider()
+                }
+                self.groupHeader("Agent Plan")
+                self.metricRows(split.agent)
+            } else {
+                self.metricRows(self.model.metrics)
             }
             if let resetCredits = self.model.codexResetCredits {
                 if !self.model.metrics.isEmpty {
@@ -1277,9 +1314,10 @@ extension UsageMenuCardView.Model {
         {
             primaryDetailLeft = detail
         }
-        if [.warp, .kilo, .mimo, .deepseek, .qoder, .mistral, .neuralwatt, .litellm].contains(input.provider),
-           let detail = primary.resetDescription,
-           !detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if [.warp, .kilo, .mimo, .deepseek, .deepinfra, .qoder, .mistral, .neuralwatt, .litellm]
+            .contains(input.provider),
+            let detail = primary.resetDescription,
+            !detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         {
             primaryDetailText = detail
         }
@@ -1306,8 +1344,9 @@ extension UsageMenuCardView.Model {
                 primaryResetText = nil
             }
         }
-        if [.warp, .kilo, .mimo, .deepseek, .qoder, .mistral, .neuralwatt, .litellm, .zenmux].contains(input.provider),
-           primary.resetsAt == nil
+        if [.warp, .kilo, .mimo, .deepseek, .deepinfra, .qoder, .mistral, .neuralwatt, .litellm, .zenmux]
+            .contains(input.provider),
+            primary.resetsAt == nil
         {
             primaryResetText = nil
         }
@@ -1374,7 +1413,7 @@ extension UsageMenuCardView.Model {
             primaryPacePercent = regen.pace.pacePercent
             primaryPaceOnTop = regen.pace.paceOnTop
         }
-        let usesBalanceStatusText = input.provider == .deepseek
+        let usesBalanceStatusText = input.provider == .deepseek || input.provider == .deepinfra
         let primaryStatusText = usesBalanceStatusText ? primaryDetailText : nil
         if usesBalanceStatusText {
             primaryDetailText = nil

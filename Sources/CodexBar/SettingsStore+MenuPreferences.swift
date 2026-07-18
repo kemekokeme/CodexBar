@@ -303,7 +303,7 @@ extension SettingsStore {
 
     static func isBalanceOnlyProvider(_ provider: UsageProvider) -> Bool {
         switch provider {
-        case .deepseek, .mistral, .moonshot, .poe:
+        case .deepseek, .deepinfra, .mistral, .moonshot, .poe:
             true
         default:
             false

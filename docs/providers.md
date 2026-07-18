@@ -8,7 +8,7 @@ read_when:
 
 # Providers
 
-CodexBar currently registers 61 provider IDs. Some companies expose multiple surfaces, such as Codex vs OpenAI API or
+CodexBar currently registers 63 provider IDs. Some companies expose multiple surfaces, such as Codex vs OpenAI API or
 OpenCode vs OpenCode Go, because the auth source and quota shape differ.
 
 ## Fetch strategies (current)
@@ -72,6 +72,7 @@ scan fails, while provider/account configuration changes replace obsolete result
 | Abacus AI | Browser cookies → compute points + billing API (`web`). |
 | Mistral | Console billing, credit balance, and Vibe subscription usage via browser cookies (`web`). |
 | DeepSeek | API key from env or token accounts → balance endpoint (`api`). |
+| DeepInfra | API key from env or token accounts → billing checklist + monthly usage endpoints (`api`). |
 | Moonshot | API key from config/env → balance endpoint (`api`). |
 | Codebuff | API token from config/env or `codebuff login` credentials → usage API (`api`). |
 | Crof | API key from config/env → credit balance + requests quota API (`api`). |
@@ -90,6 +91,7 @@ scan fails, while provider/account configuration changes replace obsolete result
 | Chutes | API key from config/env → subscription usage and quota API (`api`). |
 | Neuralwatt | API key from config/env → `/v1/quota` subscription kWh usage and prepaid balance (`api`). |
 | ZenMux | Management API key from config/env → five-hour and seven-day quota windows plus PAYG balance (`api`). |
+| ai& | API key from config/env → 30-day organization spend summed from the request logs API (`api`). |
 | Zed | Zed editor Keychain session → `cloud.zed.dev/client/users/me` for plan and quota data (`local`). |
 
 ## Codex
@@ -377,6 +379,14 @@ scan fails, while provider/account configuration changes replace obsolete result
 - Status: `https://status.deepseek.com` (link only, no auto-polling).
 - Details: `docs/deepseek.md`.
 
+## DeepInfra
+- API key via `DEEPINFRA_API_KEY` / `DEEPINFRA_TOKEN` env var or DeepInfra token accounts.
+- Reads prepaid balance, current billing-cycle spend, spending limit, and account suspension state from the billing checklist endpoint.
+- Reads current-month spend from the billing usage endpoint.
+- The automatic menu-bar metric shows the available balance; the provider card shows balance text rather than an inferred percentage, plus real spending-limit progress when configured.
+- Status: `https://status.deepinfra.com` (link only, no auto-polling).
+- Details: `docs/deepinfra.md`.
+
 ## Moonshot / Kimi API
 - API key via `MOONSHOT_API_KEY` / `MOONSHOT_KEY` env var or provider config.
 - Reads `GET /v1/users/me/balance` from the selected Moonshot region.
@@ -520,5 +530,12 @@ scan fails, while provider/account configuration changes replace obsolete result
 - Shows subscription plan name when the Step Plan status API returns one.
 - Status: none yet.
 - Details: `docs/stepfun.md`.
+
+## ai&
+- API key from config or `AIAND_API_KEY` (org-scoped `sk-` key from console.aiand.com).
+- Sums the last 30 days of organization spend from `GET https://api.aiand.com/logs` (per-request `cost` in the org's billing currency, USD or JPY, read from the rows — never assumed), following `next_after`/`next_after_id` cursor pagination up to 10 pages. An empty window shows no spend row.
+- The live `/analytics/summary` endpoint carries no cost field despite its docs, so the request log is the spend source; a hit page cap is labeled "Last 30 days (partial)" instead of silently truncating.
+- Prepaid credits with no quota windows; no session or weekly meters are synthesized. The credit balance is console-only and not shown.
+- Details: `docs/aiand.md`.
 
 See also: `docs/provider.md` for architecture notes.

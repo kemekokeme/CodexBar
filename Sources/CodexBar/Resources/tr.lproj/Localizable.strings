@@ -732,6 +732,11 @@
 "refresh_15min" = "15 dak";
 "refresh_30min" = "30 dak";
 "refresh_adaptive" = "Uyarlanabilir";
+"refresh_adaptive_agent_aware" = "Uyarlanabilir (ajan etkinliğine duyarlı)";
+"adaptive_activity_consent_title" = "Etkinliğe duyarlı yenilemeye izin verilsin mi?";
+"adaptive_activity_consent_message" = "Ajan etkinliğine duyarlı Uyarlanabilir mod, Codex ve Claude'u tanımak için komut satırları dahil yerel çalışan işlemler listesini inceleyebilir, ardından siz kod yazarken bilinen oturum meta verilerini 30 saniyede bir okuyabilir. Agent Sessions kapalıyken CodexBar bellekte yalnızca en son etkinlik zamanını kullanır ve oturum yolları ile kimliklerini atar. Bu veriler hiçbir yere gönderilmez; uzaktan keşif ve SSH kapalı kalır. Reddederseniz CodexBar yerel etkinlik taraması olmadan normal Uyarlanabilir moda döner.";
+"adaptive_activity_consent_allow" = "Yerel Etkinliğe İzin Ver";
+"adaptive_activity_consent_decline" = "Normal Uyarlanabilir Modu Kullan";
 
 /* Additional keys */
 "not_found" = "Bulunamadı";
@@ -1260,3 +1265,72 @@
 "By subscription" = "Aboneliğe göre";
 "No model-level history" = "Model düzeyinde geçmiş yok";
 "Daily estimated spend" = "Günlük tahmini harcama";
+"Coding Plan" = "Kodlama Planı";
+"Agent Plan" = "Ajan Planı";
+"Team" = "Ekip";
+
+/* Menu bar layout editor */
+"menu_bar_layout_title" = "Düzen";
+"menu_bar_layout_footer" = "Menü çubuğunu düzenlemek için belirteçleri sürükleyin. Eklemek için bir belirtece tıklayın; yerleştirilmiş bir belirteci seçip silmek için Delete tuşuna basın.";
+"menu_bar_layout_group_identity" = "Kimlik";
+"menu_bar_layout_group_usage" = "Kullanım";
+"menu_bar_layout_group_time" = "Zaman";
+"menu_bar_layout_group_money" = "Maliyet";
+"menu_bar_layout_group_structure" = "Yapı";
+"menu_bar_layout_scope_all" = "Tüm sağlayıcılar";
+"menu_bar_layout_scope_help" = "Varsayılan düzeni değiştirin veya bir sağlayıcı için geçersiz kılın.";
+"menu_bar_layout_use_all" = "Tüm sağlayıcılar düzenini kullan";
+"menu_bar_layout_preset" = "Düzen ön ayarı";
+"menu_bar_layout_preset_icon_percent" = "Simge ve yüzde";
+"menu_bar_layout_preset_icon_only" = "Yalnızca simge";
+"menu_bar_layout_preset_percent_reset" = "Yüzde ve sıfırlama";
+"menu_bar_layout_preset_compact_stacked" = "Kompakt yığın";
+"menu_bar_layout_preset_custom" = "Özel";
+"menu_bar_layout_live_preview" = "Canlı önizleme";
+"menu_bar_layout_strip" = "Menü çubuğu şeridi";
+"menu_bar_layout_remove_line_break" = "Satır sonunu kaldır";
+"menu_bar_layout_chip_hint" = "Seçin, yeniden sıralamak için sürükleyin veya Kaldır eylemini kullanın.";
+"menu_bar_layout_palette_hint" = "Eklemek için tıklayın veya düzene sürükleyin.";
+"menu_bar_layout_empty_line" = "Buraya bir belirteç bırakın";
+"menu_bar_layout_line" = "Satır %d";
+"menu_bar_layout_drag_remove" = "Kaldırmak için buraya sürükleyin";
+"menu_bar_layout_size" = "Boyut";
+"menu_bar_layout_size_small" = "Küçük";
+"menu_bar_layout_size_regular" = "Normal";
+"menu_bar_layout_gap" = "Boşluk";
+"menu_bar_layout_gap_tight" = "Dar";
+"menu_bar_layout_gap_regular" = "Normal";
+"menu_bar_layout_keyboard_hint" = "Delete seçili belirteci kaldırır";
+"menu_bar_layout_sample_account" = "hesap";
+"menu_bar_layout_sample_runs_out" = "Cum. biter";
+"menu_bar_layout_token_icon" = "Simge";
+"menu_bar_layout_token_provider" = "Sağlayıcı adı";
+"menu_bar_layout_token_account" = "Hesap";
+"menu_bar_layout_token_session" = "Oturum %";
+"menu_bar_layout_token_weekly" = "Haftalık %";
+"menu_bar_layout_token_auto" = "Otomatik %";
+"menu_bar_layout_token_bar" = "Kullanım çubuğu";
+"menu_bar_layout_token_resets_in" = "Sıfırlamaya";
+"menu_bar_layout_token_reset_at" = "Sıfırlama saati";
+"menu_bar_layout_token_runs_out" = "Biter";
+"menu_bar_layout_token_cost_today" = "Bugünkü maliyet";
+"menu_bar_layout_token_cost_30d" = "30 günlük maliyet";
+"menu_bar_layout_token_space" = "Boşluk";
+"menu_bar_layout_token_line_break" = "Satır sonu";
+"menu_bar_layout_token_separator_accessibility" = "Ayırıcı nokta";
+
+/* Menu bar layout accessibility */
+"Icon unavailable" = "Simge: Kullanılamıyor";
+"%@ icon" = "%@: Simge";
+"Provider name unavailable" = "Sağlayıcı adı: Kullanılamıyor";
+"Account unavailable" = "Hesap: Kullanılamıyor";
+"%@ unavailable" = "%@: Kullanılamıyor";
+"%@ %@" = "%@ %@";
+"Usage bar unavailable" = "Kullanım çubuğu: Kullanılamıyor";
+"Usage bar, %d of 3 filled" = "Kullanım çubuğu: %d/3 dolu";
+"Reset countdown unavailable" = "Sıfırlamaya: Kullanılamıyor";
+"Reset time unavailable" = "Sıfırlama saati: Kullanılamıyor";
+"Run-out estimate unavailable" = "Biter: Kullanılamıyor";
+"Cost today unavailable" = "Bugünkü maliyet: Kullanılamıyor";
+"30-day cost unavailable" = "30 günlük maliyet: Kullanılamıyor";
+"Resets" = "Sıfırlamalar";

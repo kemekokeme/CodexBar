@@ -70,6 +70,11 @@ extension UsageStore {
                 guard self.startupBehavior.automaticallyStartsBackgroundWork else { return }
                 self.startTimer()
                 self.updateProviderRuntimes()
+                let enabledNow = Set(self.settings.enabledProvidersOrdered(
+                    metadataByProvider: self.providerMetadata))
+                if enabledNow != self.versionDetectionProviders {
+                    self.detectVersions()
+                }
                 await self.refreshHistoricalDatasetIfNeeded()
                 await self.refreshForSettingsChange()
             }
@@ -184,6 +189,7 @@ final class UsageStore {
     var openAIDashboardCookieImportStatus: String?
     var openAIDashboardCookieImportDebugLog: String?
     var versions: [UsageProvider: String] = [:]
+    @ObservationIgnored var versionDetectionProviders: Set<UsageProvider> = []
     var isRefreshing = false
     var hasForcedRefreshEnrichmentInFlight = false
     var refreshingProviders: Set<UsageProvider> = []
@@ -289,6 +295,9 @@ final class UsageStore {
     @ObservationIgnored private var timerTask: Task<Void, Never>?
     /// In-memory only; resets on every launch.
     @ObservationIgnored private(set) var lastMenuOpenAt: Date?
+    /// Latest local Codex/Claude transcript activity observed by the existing session scanner.
+    /// In-memory only; paths and session identities never enter the refresh policy.
+    @ObservationIgnored private(set) var lastCodingActivityAt: Date?
     @ObservationIgnored var adaptiveRefreshScheduledAt: Date?
     @ObservationIgnored var tokenTimerTask: Task<Void, Never>?
     @ObservationIgnored var tokenRefreshSequenceTask: Task<Void, Never>?
@@ -775,7 +784,7 @@ final class UsageStore {
         let frequency = self.settings.refreshFrequency
         guard frequency != .manual else { return }
 
-        if frequency == .adaptive {
+        if frequency.usesAdaptivePolicy {
             // Background poller so the menu stays responsive; canceled when settings change or store
             // deallocates. Delay is recomputed before every tick from live power/thermal state and the
             // in-memory menu-open signal; the policy itself stays pure (Input is built here). `self` is
@@ -953,6 +962,7 @@ extension UsageStore {
                 .doubao: "Doubao debug log not yet implemented",
                 .sakana: "Sakana AI debug log not yet implemented",
                 .venice: "Venice debug log not yet implemented",
+                .deepinfra: "DeepInfra debug log not yet implemented",
                 .commandcode: "Command Code debug log not yet implemented",
                 .qoder: "Qoder debug log not yet implemented",
                 .stepfun: "StepFun debug log not yet implemented",
@@ -968,6 +978,7 @@ extension UsageStore {
                 .wayfinder: "Wayfinder debug log not yet implemented",
                 .sub2api: "sub2api debug log not yet implemented",
                 .zenmux: "ZenMux debug log not yet implemented",
+                .aiand: "ai& debug log not yet implemented",
             ]
             let buildText = {
                 switch provider {
@@ -1044,9 +1055,10 @@ extension UsageStore {
                         hasTokenAccount: deepSeekHasTokenAccount)
                 case .clinepass, .gemini, .antigravity, .opencode, .opencodego, .alibabatokenplan, .factory,
                      .copilot, .devin, .vertexai, .kilo, .kiro, .kimi, .moonshot, .jetbrains, .perplexity,
-                     .mimo, .doubao, .sakana, .abacus, .mistral, .codebuff, .crof, .windsurf, .venice, .manus,
-                     .commandcode, .qoder, .stepfun, .bedrock, .grok, .groq, .t3chat, .llmproxy, .litellm, .zed,
-                     .deepgram, .poe, .chutes, .neuralwatt, .clawrouter, .longcat, .wayfinder, .sub2api, .zenmux:
+                     .mimo, .doubao, .sakana, .abacus, .mistral, .deepinfra, .codebuff, .crof, .windsurf,
+                     .venice, .manus, .commandcode, .qoder, .stepfun, .bedrock, .grok, .groq, .t3chat, .llmproxy,
+                     .litellm, .zed, .deepgram, .poe, .chutes, .neuralwatt, .clawrouter, .longcat, .wayfinder,
+                     .sub2api, .zenmux, .aiand:
                     return unimplementedDebugLogMessages[provider] ?? "Debug log not yet implemented"
                 }
             }
@@ -1255,8 +1267,19 @@ extension UsageStore {
         }
     }
 
-    private func detectVersions() {
-        let implementations = ProviderCatalog.all
+    /// Version probes can spawn subprocesses (Antigravity's `ps` scan trips a TCC
+    /// prompt, CLI providers exec their binaries), so disabled providers must not
+    /// be probed (#2267). Settings changes re-run this when the enabled set changes.
+    static func versionDetectionImplementations(
+        enabled: Set<UsageProvider>) -> [any ProviderImplementation]
+    {
+        ProviderCatalog.all.filter { enabled.contains($0.id) }
+    }
+
+    func detectVersions() {
+        let enabled = Set(self.settings.enabledProvidersOrdered(metadataByProvider: self.providerMetadata))
+        self.versionDetectionProviders = enabled
+        let implementations = Self.versionDetectionImplementations(enabled: enabled)
         let browserDetection = self.browserDetection
         Task { @MainActor [weak self] in
             let resolved = await Task.detached { () -> [UsageProvider: String] in
@@ -1528,20 +1551,22 @@ extension UsageStore {
 }
 
 extension UsageStore {
+    func retainCodingActivityIfNewer(_ date: Date) {
+        if self.lastCodingActivityAt.map({ date > $0 }) ?? true {
+            self.lastCodingActivityAt = date
+        }
+    }
+
+    func clearCodingActivityObservation() {
+        self.lastCodingActivityAt = nil
+    }
+
+    func restartAdaptiveTimerPreservingResetBoundary() {
+        self.startTimer(preservingResetBoundaryRefresh: true)
+    }
+
     func noteMenuOpened(at date: Date = Date()) {
         self.lastMenuOpenAt = date
-        guard self.settings.refreshFrequency == .adaptive else { return }
-
-        let decision = Self.adaptiveRefreshDecision(
-            now: date,
-            lastMenuOpenAt: date,
-            lowPowerModeEnabled: ProcessInfo.processInfo.isLowPowerModeEnabled,
-            thermalState: ProcessInfo.processInfo.thermalState)
-        let candidate = date.addingTimeInterval(TimeInterval(decision.delay.components.seconds))
-        guard Self.shouldAdvanceAdaptiveTimer(
-            scheduledAt: self.adaptiveRefreshScheduledAt,
-            candidate: candidate)
-        else { return }
-        self.startTimer(preservingResetBoundaryRefresh: true)
+        self.advanceAdaptiveTimerIfEarlier(at: date)
     }
 }

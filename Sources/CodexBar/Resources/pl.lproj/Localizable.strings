@@ -738,6 +738,11 @@
 "refresh_15min" = "Co 15 min";
 "refresh_30min" = "Co 30 min";
 "refresh_adaptive" = "Adaptacyjny";
+"refresh_adaptive_agent_aware" = "Adaptacyjny (aktywność agentów)";
+"adaptive_activity_consent_title" = "Zezwolić na odświeżanie uwzględniające aktywność?";
+"adaptive_activity_consent_message" = "Tryb adaptacyjny uwzględniający aktywność agentów może sprawdzać listę uruchomionych procesów lokalnych, w tym wiersze poleceń, aby rozpoznać Codex i Claude, a następnie podczas programowania co 30 sekund odczytywać metadane znanych sesji. Gdy Agent Sessions jest wyłączone, CodexBar używa w pamięci tylko czasu ostatniej aktywności i odrzuca ścieżki oraz tożsamości sesji. Te dane nie są nigdzie wysyłane, a wykrywanie zdalne i SSH pozostają wyłączone. Jeśli odmówisz, CodexBar wróci do zwykłego trybu adaptacyjnego bez skanowania aktywności lokalnej.";
+"adaptive_activity_consent_allow" = "Zezwól na lokalną aktywność";
+"adaptive_activity_consent_decline" = "Używaj zwykłego Adaptacyjnego";
 
 /* Additional keys */
 "not_found" = "Nie znaleziono";
@@ -1262,3 +1267,72 @@
 "By subscription" = "Według subskrypcji";
 "No model-level history" = "Brak historii na poziomie modeli";
 "Daily estimated spend" = "Szacowane dzienne wydatki";
+"Coding Plan" = "Plan kodowania";
+"Agent Plan" = "Plan agenta";
+"Team" = "Zespół";
+
+/* Menu bar layout editor */
+"menu_bar_layout_title" = "Układ";
+"menu_bar_layout_footer" = "Przeciągaj elementy, aby ułożyć pasek menu. Kliknij element, aby go dodać; zaznacz umieszczony element i naciśnij Delete, aby go usunąć.";
+"menu_bar_layout_group_identity" = "Tożsamość";
+"menu_bar_layout_group_usage" = "Zużycie";
+"menu_bar_layout_group_time" = "Czas";
+"menu_bar_layout_group_money" = "Koszt";
+"menu_bar_layout_group_structure" = "Struktura";
+"menu_bar_layout_scope_all" = "Wszyscy dostawcy";
+"menu_bar_layout_scope_help" = "Edytuj układ domyślny lub zastąp go dla jednego dostawcy.";
+"menu_bar_layout_use_all" = "Użyj układu wszystkich dostawców";
+"menu_bar_layout_preset" = "Ustawienie układu";
+"menu_bar_layout_preset_icon_percent" = "Ikona i procent";
+"menu_bar_layout_preset_icon_only" = "Tylko ikona";
+"menu_bar_layout_preset_percent_reset" = "Procent i reset";
+"menu_bar_layout_preset_compact_stacked" = "Kompaktowy stos";
+"menu_bar_layout_preset_custom" = "Niestandardowe";
+"menu_bar_layout_live_preview" = "Podgląd na żywo";
+"menu_bar_layout_strip" = "Pasek menu";
+"menu_bar_layout_remove_line_break" = "Usuń podział wiersza";
+"menu_bar_layout_chip_hint" = "Zaznacz, przeciągnij, aby zmienić kolejność, lub użyj akcji Usuń.";
+"menu_bar_layout_palette_hint" = "Kliknij, aby dodać, lub przeciągnij do układu.";
+"menu_bar_layout_empty_line" = "Upuść element tutaj";
+"menu_bar_layout_line" = "Wiersz %d";
+"menu_bar_layout_drag_remove" = "Przeciągnij tutaj, aby usunąć";
+"menu_bar_layout_size" = "Rozmiar";
+"menu_bar_layout_size_small" = "Mały";
+"menu_bar_layout_size_regular" = "Zwykły";
+"menu_bar_layout_gap" = "Odstęp";
+"menu_bar_layout_gap_tight" = "Wąski";
+"menu_bar_layout_gap_regular" = "Zwykły";
+"menu_bar_layout_keyboard_hint" = "Delete usuwa zaznaczony element";
+"menu_bar_layout_sample_account" = "konto";
+"menu_bar_layout_sample_runs_out" = "wyczerpie się pt.";
+"menu_bar_layout_token_icon" = "Ikona";
+"menu_bar_layout_token_provider" = "Nazwa dostawcy";
+"menu_bar_layout_token_account" = "Konto";
+"menu_bar_layout_token_session" = "Sesja %";
+"menu_bar_layout_token_weekly" = "Tydzień %";
+"menu_bar_layout_token_auto" = "Automatycznie %";
+"menu_bar_layout_token_bar" = "Pasek użycia";
+"menu_bar_layout_token_resets_in" = "Reset za";
+"menu_bar_layout_token_reset_at" = "Reset o";
+"menu_bar_layout_token_runs_out" = "Wyczerpie się";
+"menu_bar_layout_token_cost_today" = "Koszt dzisiaj";
+"menu_bar_layout_token_cost_30d" = "Koszt 30 dni";
+"menu_bar_layout_token_space" = "Odstęp";
+"menu_bar_layout_token_line_break" = "Podział wiersza";
+"menu_bar_layout_token_separator_accessibility" = "Kropka oddzielająca";
+
+/* Menu bar layout accessibility */
+"Icon unavailable" = "Ikona: Niedostępne";
+"%@ icon" = "%@: Ikona";
+"Provider name unavailable" = "Nazwa dostawcy: Niedostępne";
+"Account unavailable" = "Konto: Niedostępne";
+"%@ unavailable" = "%@: Niedostępne";
+"%@ %@" = "%@ %@";
+"Usage bar unavailable" = "Pasek użycia: Niedostępne";
+"Usage bar, %d of 3 filled" = "Pasek użycia: %d/3 wypełnione";
+"Reset countdown unavailable" = "Reset za: Niedostępne";
+"Reset time unavailable" = "Reset o: Niedostępne";
+"Run-out estimate unavailable" = "Wyczerpie się: Niedostępne";
+"Cost today unavailable" = "Koszt dzisiaj: Niedostępne";
+"30-day cost unavailable" = "Koszt 30 dni: Niedostępne";
+"Resets" = "Resety";
