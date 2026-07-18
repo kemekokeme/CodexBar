@@ -103,9 +103,6 @@ public enum CookieHeaderCache {
     }
 
     private static let log = CodexBarLog.logger(LogCategories.cookieCache)
-    private static let legacyBaseURLOverrideLock = NSLock()
-    private nonisolated(unsafe) static var legacyBaseURLOverride: URL?
-
     private struct DisplaySnapshot {
         let entry: Entry?
         let refreshAfter: Date
@@ -131,13 +128,12 @@ public enum CookieHeaderCache {
     private nonisolated(unsafe) static var displayGenerations: [KeychainCacheStore.Key: UInt64] = [:]
     private nonisolated(unsafe) static var displayRevalidationsInFlight: Set<KeychainCacheStore.Key> = []
     private nonisolated(unsafe) static var legacyMigrationsInFlight: Set<UsageProvider> = []
-    private static let displayIntervalOverrideLock = NSLock()
-    private nonisolated(unsafe) static var displayStalenessIntervalOverride: TimeInterval?
-    private nonisolated(unsafe) static var displayUnavailableRetryIntervalOverride: TimeInterval?
     private static let displayStalenessInterval: TimeInterval = 30
     private static let displayUnavailableRetryInterval: TimeInterval = 1
     #if DEBUG
     @TaskLocal private static var taskLegacyBaseURLOverride: URL?
+    @TaskLocal static var taskDisplayStalenessIntervalOverride: TimeInterval?
+    @TaskLocal static var taskDisplayUnavailableRetryIntervalOverride: TimeInterval?
     @TaskLocal private static var legacyRemovalFailureOverride = false
     #endif
 
@@ -306,21 +302,21 @@ public enum CookieHeaderCache {
     }
 
     private static var currentDisplayStalenessInterval: TimeInterval {
-        self.displayIntervalOverrideLock.withLock { self.displayStalenessIntervalOverride }
-            ?? self.displayStalenessInterval
+        #if DEBUG
+        if let taskOverride = self.taskDisplayStalenessIntervalOverride {
+            return taskOverride
+        }
+        #endif
+        return self.displayStalenessInterval
     }
 
     private static var currentDisplayUnavailableRetryInterval: TimeInterval {
-        self.displayIntervalOverrideLock.withLock { self.displayUnavailableRetryIntervalOverride }
-            ?? self.displayUnavailableRetryInterval
-    }
-
-    static func setDisplayStalenessIntervalOverrideForTesting(_ interval: TimeInterval?) {
-        self.displayIntervalOverrideLock.withLock { self.displayStalenessIntervalOverride = interval }
-    }
-
-    static func setDisplayUnavailableRetryIntervalOverrideForTesting(_ interval: TimeInterval?) {
-        self.displayIntervalOverrideLock.withLock { self.displayUnavailableRetryIntervalOverride = interval }
+        #if DEBUG
+        if let taskOverride = self.taskDisplayUnavailableRetryIntervalOverride {
+            return taskOverride
+        }
+        #endif
+        return self.displayUnavailableRetryInterval
     }
 
     static func displayIntervalsForTesting() -> (staleness: TimeInterval, unavailableRetry: TimeInterval) {
@@ -793,12 +789,6 @@ public enum CookieHeaderCache {
         }
     }
 
-    static func setLegacyBaseURLOverrideForTesting(_ url: URL?) {
-        self.legacyBaseURLOverrideLock.withLock {
-            self.legacyBaseURLOverride = url
-        }
-    }
-
     #if DEBUG
     static func withLegacyBaseURLOverrideForTesting<T>(
         _ url: URL?,
@@ -811,6 +801,7 @@ public enum CookieHeaderCache {
 
     static func withLegacyBaseURLOverrideForTesting<T>(
         _ url: URL?,
+        isolation _: isolated (any Actor)? = #isolation,
         operation: () async throws -> T) async rethrows -> T
     {
         try await self.$taskLegacyBaseURLOverride.withValue(url) {
@@ -910,9 +901,7 @@ public enum CookieHeaderCache {
             return taskOverride
         }
         #endif
-        return self.legacyBaseURLOverrideLock.withLock {
-            self.legacyBaseURLOverride
-        }
+        return nil
     }
 
     private static var defaultLegacyBaseURL: URL {
