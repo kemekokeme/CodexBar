@@ -271,6 +271,7 @@ public enum KeychainCacheStore {
 
     public static func withServiceOverrideForTesting<T>(
         _ service: String?,
+        isolation _: isolated (any Actor)? = #isolation,
         operation: () async throws -> T) async rethrows -> T
     {
         try await self.$serviceOverride.withValue(service) {
@@ -296,6 +297,7 @@ public enum KeychainCacheStore {
     }
 
     static func withImplicitTestStoreForTesting<T>(
+        isolation _: isolated (any Actor)? = #isolation,
         operation: () async throws -> T) async rethrows -> T
     {
         try await self.$forceImplicitTestStore.withValue(true) {

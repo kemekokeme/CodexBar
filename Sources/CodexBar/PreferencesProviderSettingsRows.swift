@@ -84,12 +84,12 @@ struct ProviderSettingsPickerRowView: View {
 
                 let visibleActions = self.picker.trailingActions.filter { $0.isVisible?() ?? true }
                 ForEach(visibleActions) { action in
-                    Button(action.title) {
+                    Button(L(action.title)) {
                         Task { @MainActor in
                             await action.perform()
                         }
                     }
-                    .buttonStyle(.bordered)
+                    .applyProviderSettingsButtonStyle(action.style)
                     .controlSize(.small)
                 }
 

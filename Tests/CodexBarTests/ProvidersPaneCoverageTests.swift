@@ -305,6 +305,7 @@ struct ProvidersPaneCoverageTests {
 
         #expect(picker?.dynamicSubtitle?() == "Paste a Cookie header captured from the billing page.")
         #expect(picker?.trailingText?() == nil)
+        #expect(picker?.trailingActions.first?.isVisible?() == false)
     }
 
     @Test
@@ -320,6 +321,7 @@ struct ProvidersPaneCoverageTests {
 
         #expect(picker?.dynamicSubtitle?() == "Paste a Cookie header captured from the billing page.")
         #expect(picker?.trailingText?() == nil)
+        #expect(picker?.trailingActions.first?.isVisible?() == false)
     }
 
     @Test

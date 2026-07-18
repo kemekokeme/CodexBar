@@ -1,10 +1,11 @@
-import CodexBarCore
 import Foundation
 import SwiftUI
 import Testing
 @testable import CodexBar
+@testable import CodexBarCore
 
 @MainActor
+@Suite(.serialized)
 struct ProviderSettingsDescriptorTests {
     @Test
     func `toggle I ds are unique across providers`() throws {
@@ -48,6 +49,75 @@ struct ProviderSettingsDescriptorTests {
         #expect(project.subtitle.contains(OpenAIAPISettingsReader.projectIDEnvironmentKey))
         #expect(fixture.settings.openAIAPIProjectID == "proj_abc")
         #expect(fixture.settings.providerConfig(for: .openai)?.sanitizedWorkspaceID == "proj_abc")
+    }
+
+    @Test
+    func `open code cookie refresh commits replacement through user initiated gate`() async throws {
+        let fixture = try self.makeSettingsFixture(suite: "ProviderSettingsDescriptorTests-opencode-refresh")
+        let context = fixture.settingsContext(provider: .opencode)
+        let picker = try #require(OpenCodeProviderImplementation().settingsPickers(context: context).first)
+        let action = try #require(picker.trailingActions.first)
+        let service = "com.steipete.codexbar.tests.settings-cookie-refresh.\(UUID().uuidString)"
+        var observedInteraction: ProviderInteraction?
+
+        #expect(action.title == "Refresh")
+        #expect(action.isVisible?() == true)
+
+        await KeychainCacheStore.withServiceOverrideForTesting(service) {
+            await KeychainCacheStore.withImplicitTestStoreForTesting {
+                CookieHeaderCache.store(
+                    provider: .opencode,
+                    cookieHeader: "old-test-cookie",
+                    sourceLabel: "Test old")
+                fixture.store._test_providerRefreshOverride = { provider in
+                    observedInteraction = ProviderInteractionContext.current
+                    CookieHeaderCache.store(
+                        provider: provider,
+                        cookieHeader: "new-test-cookie",
+                        sourceLabel: "Test new")
+                }
+                defer { fixture.store._test_providerRefreshOverride = nil }
+
+                await action.perform()
+
+                #expect(observedInteraction == .userInitiated)
+                #expect(CookieHeaderCache.load(provider: .opencode)?.cookieHeader == "new-test-cookie")
+                #expect(picker.trailingText?()?.contains("Test new") == true)
+            }
+        }
+    }
+
+    @Test
+    func `open code cookie refresh respects denial cooldown and preserves cookie`() async throws {
+        let fixture = try self.makeSettingsFixture(suite: "ProviderSettingsDescriptorTests-opencode-cooldown")
+        let context = fixture.settingsContext(provider: .opencode)
+        let picker = try #require(OpenCodeProviderImplementation().settingsPickers(context: context).first)
+        let action = try #require(picker.trailingActions.first)
+        let service = "com.steipete.codexbar.tests.settings-cookie-cooldown.\(UUID().uuidString)"
+        var cooldownRespected = false
+
+        BrowserCookieAccessGate.resetForTesting()
+        BrowserCookieAccessGate.recordDenied(for: .chrome)
+        defer { BrowserCookieAccessGate.resetForTesting() }
+
+        await KeychainCacheStore.withServiceOverrideForTesting(service) {
+            await KeychainCacheStore.withImplicitTestStoreForTesting {
+                CookieHeaderCache.store(
+                    provider: .opencode,
+                    cookieHeader: "old-test-cookie",
+                    sourceLabel: "Test old")
+                fixture.store._test_providerRefreshOverride = { _ in
+                    cooldownRespected = !BrowserCookieAccessGate.shouldAttempt(.chrome)
+                }
+                defer { fixture.store._test_providerRefreshOverride = nil }
+
+                await action.perform()
+
+                #expect(cooldownRespected)
+                #expect(CookieHeaderCache.load(provider: .opencode)?.cookieHeader == "old-test-cookie")
+                #expect(picker.trailingText?() == L("Failed"))
+            }
+        }
     }
 
     @Test

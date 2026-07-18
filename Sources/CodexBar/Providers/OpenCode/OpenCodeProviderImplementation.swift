@@ -26,7 +26,9 @@ struct OpenCodeProviderImplementation: ProviderImplementation {
     @MainActor
     func tokenAccountsVisibility(context: ProviderSettingsContext, support: TokenAccountSupport) -> Bool {
         guard support.requiresManualCookieSource else { return true }
-        if !context.settings.tokenAccounts(for: context.provider).isEmpty { return true }
+        if !context.settings.tokenAccounts(for: context.provider).isEmpty {
+            return true
+        }
         return context.settings.opencodeCookieSource == .manual
     }
 
@@ -68,34 +70,16 @@ struct OpenCodeProviderImplementation: ProviderImplementation {
                 isVisible: nil,
                 onChange: nil,
                 trailingText: {
-                    OpenCodeProviderUI.cachedCookieTrailingText(
+                    ProviderCookieRefreshAction.trailingText(
                         provider: .opencode,
-                        cookieSource: context.settings.opencodeCookieSource)
+                        cookieSource: context.settings.opencodeCookieSource,
+                        context: context)
                 },
                 trailingActions: [
-                    ProviderSettingsActionDescriptor(
-                        id: "opencode-reimport-cookie",
-                        title: "↻",
-                        style: .bordered,
-                        isVisible: nil,
-                        perform: {
-                            CookieHeaderCache.clear(provider: .opencode)
-                            #if os(macOS)
-                            do {
-                                let session = try OpenCodeCookieImporter.importSession(
-                                    browserDetection: BrowserDetection(),
-                                    preferredBrowsers: [])
-                                CookieHeaderCache.store(
-                                    provider: .opencode,
-                                    cookieHeader: session.cookieHeader,
-                                    sourceLabel: session.sourceLabel)
-                                context.setStatusText("opencode-cookie-status", "✅ Refreshed from \(session.sourceLabel)")
-                            } catch {
-                                context.setStatusText("opencode-cookie-status", "Cache cleared. Will re-import on next refresh.")
-                            }
-                            #endif
-                            await context.store.refreshProvider(.opencode, allowDisabled: true)
-                        }),
+                    ProviderCookieRefreshAction.descriptor(
+                        provider: .opencode,
+                        cookieSource: { context.settings.opencodeCookieSource },
+                        context: context),
                 ]),
         ]
     }
