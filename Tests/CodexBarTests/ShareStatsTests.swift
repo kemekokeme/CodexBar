@@ -224,6 +224,42 @@ struct ShareStatsTests {
         #expect(!ShareStatsFormatting.text(payload).lowercased().contains("inf"))
     }
 
+    @Test
+    func `partial model history does not enter shared rankings`() throws {
+        let group = SpendDashboardModel.CurrencyGroup(
+            currencyCode: "USD",
+            providers: [
+                SpendDashboardModel.ProviderRow(
+                    id: "codex",
+                    rank: 1,
+                    provider: .codex,
+                    displayName: "Codex",
+                    totalTokens: 10,
+                    totalCost: 2,
+                    coveredDayCount: 7),
+            ],
+            models: [
+                SpendDashboardModel.ModelRow(
+                    rank: 1,
+                    provider: .codex,
+                    providerName: "Codex",
+                    modelName: "gpt-5.4",
+                    totalTokens: 10,
+                    totalCost: 2),
+            ],
+            dailyPoints: [],
+            totalTokens: nil,
+            totalCost: nil,
+            coveredDayCount: 7,
+            chartDomain: Self.date...Self.date,
+            modelHistoryCompleteness: .incomplete)
+        let payload = try #require(ShareStatsBuilder.make(
+            model: SpendDashboardModel(requestedDays: 7, groups: [group])))
+
+        #expect(payload.providers.count == 1)
+        #expect(payload.topModels.isEmpty)
+    }
+
     @Test @MainActor
     func `renderer creates social card PNG`() throws {
         let payload = try #require(ShareStatsBuilder.make(model: Self.dashboard))
